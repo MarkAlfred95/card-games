@@ -4,8 +4,10 @@ import type { Game } from '../games'
 import Card from '../components/Card'
 import CardBack from '../components/CardBack'
 import type { CSSVars } from '../styleVars'
+import { useWallet, formatUSD } from '../wallet'
 
 export default function Home() {
+  const { balance } = useWallet()
   return (
     // theme-classic supplies the --card-* variables the preview cards need.
     <div
@@ -18,6 +20,12 @@ export default function Home() {
         <header className="mb-10 text-center">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Card Games</h1>
           <p className="mt-3 text-slate-400">Pick a game to play — more on the way.</p>
+          <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/5 px-5 py-2 ring-1 ring-white/10">
+            <span className="text-sm text-slate-400">Wallet</span>
+            <b className={`text-lg tabular-nums ${balance < 0 ? 'text-red-300' : 'text-emerald-300'}`}>
+              {formatUSD(balance)}
+            </b>
+          </div>
         </header>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

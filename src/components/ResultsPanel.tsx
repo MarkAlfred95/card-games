@@ -2,28 +2,40 @@ import Card from './Card'
 import type { CSSVars } from '../styleVars'
 import type {
   Arrangement,
+  BankerRoundResult,
   Card as CardModel,
   EvaluatedArrangement,
-  RoundResult,
 } from '../game/types'
+import { formatUSD, formatDelta } from '../wallet'
 
-const fmt = (n: number) => (n > 0 ? `+${n}` : `${n}`)
-
-interface ResultData extends RoundResult {
+interface ResultData extends BankerRoundResult {
   arrangements: Arrangement[]
 }
 
 interface ResultsPanelProps {
   result: ResultData
-  scores: number[]
   names: string[]
+  balances: number[] // per seat, after this round was applied
+  bankerSeat: number
+  humanSeat: number
+  gameIndex: number
+  totalGames: number
   onNext: () => void
 }
 
-// Full-screen reveal after a round is scored.
-export default function ResultsPanel({ result, scores, names, onNext }: ResultsPanelProps) {
-  const { totals, arrangements, evals, foul } = result
-  const top = Math.max(...totals)
+// Full-screen reveal after a banker round is scored.
+export default function ResultsPanel({
+  result,
+  names,
+  balances,
+  bankerSeat,
+  humanSeat,
+  gameIndex,
+  totalGames,
+  onNext,
+}: ResultsPanelProps) {
+  const { arrangements, evals, foul, moneyDeltas, stakes } = result
+  const isLast = gameIndex + 1 >= totalGames
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black/70 p-4 backdrop-blur-sm">
@@ -32,12 +44,17 @@ export default function ResultsPanel({ result, scores, names, onNext }: ResultsP
         style={{ background: 'var(--table-felt-2)', '--card-w': '2.3rem' } as CSSVars}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Round results</h2>
+          <div>
+            <h2 className="text-lg font-semibold">
+              Game {gameIndex + 1} of {totalGames} — results
+            </h2>
+            <p className="text-sm opacity-70">👑 {names[bankerSeat]} banked this game.</p>
+          </div>
           <button
             onClick={onNext}
             className="rounded-lg bg-white/90 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-white"
           >
-            Next hand →
+            {isLast ? 'Final standings →' : 'Next game →'}
           </button>
         </div>
 
@@ -49,9 +66,11 @@ export default function ResultsPanel({ result, scores, names, onNext }: ResultsP
               arrangement={arrangements[p]}
               ev={evals[p]}
               foul={foul[p]}
-              round={totals[p]}
-              total={scores[p]}
-              winner={totals[p] === top}
+              money={moneyDeltas[p]}
+              stake={stakes[p]}
+              balance={balances[p]}
+              isBanker={p === bankerSeat}
+              isYou={p === humanSeat}
             />
           ))}
         </div>
@@ -65,20 +84,33 @@ interface PlayerResultProps {
   arrangement: Arrangement
   ev: EvaluatedArrangement
   foul: boolean
-  round: number
-  total: number
-  winner: boolean
+  money: number
+  stake: number
+  balance: number
+  isBanker: boolean
+  isYou: boolean
 }
 
-function PlayerResult({ name, arrangement, ev, foul, round, total, winner }: PlayerResultProps) {
+function PlayerResult({
+  name,
+  arrangement,
+  ev,
+  foul,
+  money,
+  stake,
+  balance,
+  isBanker,
+  isYou,
+}: PlayerResultProps) {
   return (
     <div
       className={`rounded-xl p-3 ${
-        winner ? 'bg-emerald-500/15 ring-1 ring-emerald-400/50' : 'bg-black/20'
+        isYou ? 'bg-emerald-500/15 ring-1 ring-emerald-400/50' : 'bg-black/20'
       }`}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-2 font-semibold">
+          {isBanker && <span title="Banker">👑</span>}
           {name}
           {foul && (
             <span className="rounded bg-red-500/80 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
@@ -87,11 +119,11 @@ function PlayerResult({ name, arrangement, ev, foul, round, total, winner }: Pla
           )}
         </span>
         <span
-          className={`text-sm font-bold ${
-            round > 0 ? 'text-emerald-300' : round < 0 ? 'text-red-300' : 'opacity-70'
+          className={`text-sm font-bold tabular-nums ${
+            money > 0 ? 'text-emerald-300' : money < 0 ? 'text-red-300' : 'opacity-70'
           }`}
         >
-          {fmt(round)}
+          {formatDelta(money)}
         </span>
       </div>
 
@@ -101,8 +133,9 @@ function PlayerResult({ name, arrangement, ev, foul, round, total, winner }: Pla
         <Row label="Front" cards={arrangement.front} handName={ev.front.name} />
       </div>
 
-      <div className="mt-2 border-t border-white/10 pt-2 text-xs opacity-70">
-        Running total: {fmt(total)}
+      <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-2 text-xs opacity-70">
+        <span>{isBanker ? 'Banking' : `Stake ${formatUSD(stake)}/pt`}</span>
+        <span>Balance {formatUSD(balance)}</span>
       </div>
     </div>
   )

@@ -4,6 +4,8 @@
 import { evaluate, compareHands, CATEGORY } from './ranking'
 import type {
   Arrangement,
+  BankerPair,
+  BankerRoundResult,
   EvaluatedArrangement,
   RoundResult,
   RoyaltyTable,
@@ -117,4 +119,50 @@ export function scoreRound(
   }
 
   return { totals, evals, foul: evals.map((e) => e.foul) }
+}
+
+// Score a banker round: the banker plays head-to-head against every other
+// player. Each non-banker stakes a money-per-point amount; money won from that
+// player is (banker's point margin vs them) * their stake. The banker's totals
+// are the sum across all opponents. Money deltas are zero-sum.
+export function scoreBanker(
+  arrangements: Arrangement[],
+  bankerSeat: number,
+  stakes: number[],
+  options: Partial<ScoreOptions> = {},
+): BankerRoundResult {
+  const opts: ScoreOptions = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+    royalties: options.royalties ?? DEFAULT_ROYALTIES,
+  }
+
+  const evals = arrangements.map((a) => evaluateArrangement(a, opts.royalties))
+  const moneyDeltas = arrangements.map(() => 0)
+  const pointDeltas = arrangements.map(() => 0)
+  const pairs: BankerPair[] = []
+
+  for (let i = 0; i < evals.length; i++) {
+    if (i === bankerSeat) continue
+    const [bankerPts, playerPts] = scorePair(evals[bankerSeat], evals[i], opts)
+    const stake = stakes[i] ?? 0
+    const money = bankerPts * stake
+
+    pointDeltas[bankerSeat] += bankerPts
+    pointDeltas[i] += playerPts
+    moneyDeltas[bankerSeat] += money
+    moneyDeltas[i] += playerPts * stake // === -money
+
+    pairs.push({ seat: i, points: bankerPts, stake, money })
+  }
+
+  return {
+    bankerSeat,
+    stakes,
+    pointDeltas,
+    moneyDeltas,
+    evals,
+    foul: evals.map((e) => e.foul),
+    pairs,
+  }
 }
