@@ -4,11 +4,13 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  pointerWithin,
+  rectIntersection,
   useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { buildDeck, shuffle, deal, RANKS } from '../game/deck'
 import { evaluate, compareHands } from '../game/ranking'
 import { scoreBanker } from '../game/scoring'
@@ -55,6 +57,17 @@ const COMEBACK_STAKE = 50
 const RANK_ORDER = Object.fromEntries(RANKS.map((r, i) => [r, i])) as Record<string, number>
 const SUIT_ORDER: Record<string, number> = { S: 0, H: 1, C: 2, D: 3 }
 const CAPACITY: Record<ZoneId, number> = { hand: 13, back: 5, middle: 5, front: 3 }
+const ZONE_IDS = new Set<string>(['hand', 'back', 'middle', 'front'])
+
+// Prefer dropping onto a card (to swap) over the zone beneath it; fall back to
+// the zone (to move into an empty slot), then to rect intersection.
+const collisionDetection: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args)
+  const onCard = pointer.find((c) => !ZONE_IDS.has(String(c.id)))
+  if (onCard) return [onCard]
+  if (pointer.length) return pointer
+  return rectIntersection(args)
+}
 
 function sortHand(cards: CardModel[]): CardModel[] {
   return [...cards].sort(
@@ -79,12 +92,20 @@ function botStake(balance: number): number {
   return denoms[Math.floor(Math.random() * denoms.length)]
 }
 
-// Deal a fresh round. Returns the human seat's hand staged in zones plus every
-// seat's 13 cards (used to arrange the bots at scoring time).
+// Deal a fresh round. The human seat's 13 cards start randomly spread across the
+// three rows (Back 5 / Middle 5 / Front 3, each sorted for readability) so the
+// player rearranges by swapping rather than building from an empty board. Every
+// seat's 13 cards are also returned (used to arrange the bots at scoring time).
 function dealRound(humanSeat: number): RoundState {
   const hands = deal(shuffle(buildDeck()), SEATS, 13)
+  const mine = shuffle(hands[humanSeat])
   return {
-    zones: { hand: sortHand(hands[humanSeat]), back: [], middle: [], front: [] },
+    zones: {
+      hand: [],
+      back: sortHand(mine.slice(0, 5)),
+      middle: sortHand(mine.slice(5, 10)),
+      front: sortHand(mine.slice(10, 13)),
+    },
     hands,
   }
 }
@@ -223,19 +244,43 @@ export default function PusoyTrese() {
     setActiveCard(null)
     if (!over) return
     const from = active.data.current?.zone as ZoneId | undefined
-    const to = over.id as ZoneId
-    if (!from || from === to) return
+    if (!from) return
+    const activeId = String(active.id)
+    const droppedOnCard = over.data.current?.type === 'card'
 
     setRound((prev) => {
       const z = prev.zones
-      if (z[to].length >= CAPACITY[to]) return prev // target full -> reject
-      const card = z[from].find((c) => c.id === active.id)
+
+      // Dropped onto another card -> swap the two cards in place.
+      if (droppedOnCard) {
+        const targetId = String(over.id)
+        if (targetId === activeId) return prev
+        const toZone = over.data.current?.zone as ZoneId
+        const ai = z[from].findIndex((c) => c.id === activeId)
+        const bi = z[toZone].findIndex((c) => c.id === targetId)
+        if (ai < 0 || bi < 0) return prev
+        if (from === toZone) {
+          const arr = [...z[from]]
+          ;[arr[ai], arr[bi]] = [arr[bi], arr[ai]]
+          return { ...prev, zones: { ...z, [from]: arr } }
+        }
+        const fromArr = [...z[from]]
+        const toArr = [...z[toZone]]
+        ;[fromArr[ai], toArr[bi]] = [toArr[bi], fromArr[ai]]
+        return { ...prev, zones: { ...z, [from]: fromArr, [toZone]: toArr } }
+      }
+
+      // Dropped onto a zone's empty space -> move into it (if not full).
+      const to = over.id as ZoneId
+      if (from === to) return prev
+      if (z[to].length >= CAPACITY[to]) return prev
+      const card = z[from].find((c) => c.id === activeId)
       if (!card) return prev
       return {
         ...prev,
         zones: {
           ...z,
-          [from]: z[from].filter((c) => c.id !== active.id),
+          [from]: z[from].filter((c) => c.id !== activeId),
           [to]: [...z[to], card],
         },
       }
@@ -379,7 +424,12 @@ export default function PusoyTrese() {
 
   return (
     <div className={shellClass} style={shellStyle}>
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={collisionDetection}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         <div className="flex min-h-screen flex-col gap-4 p-6" style={bgStyle}>
           <Header theme={theme} setTheme={setTheme} back={back} setBack={setBack}
             themeOptions={themeOptions} backOptions={backOptions} balance={wallet.balance} />
@@ -552,7 +602,9 @@ function HandZone({ cards }: { cards: CardModel[] }) {
         isOver ? 'border-white/60 bg-white/10' : 'border-white/15 bg-black/15'
       }`}
     >
-      <p className="mb-2 text-sm opacity-70">Your hand — drag cards into the rows above</p>
+      <p className="mb-2 text-sm opacity-70">
+        Holding area — drag a card here to set it aside, or swap cards by dropping one onto another
+      </p>
       <div className="flex min-h-[2rem] flex-wrap gap-2">
         {cards.map((card) => (
           <DraggableCard key={card.id} card={card} zone="hand" />

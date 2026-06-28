@@ -1,4 +1,4 @@
-import { useDraggable } from '@dnd-kit/core'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
 import Card from './Card'
 import type { Card as CardModel } from '../game/types'
 
@@ -7,13 +7,23 @@ interface DraggableCardProps {
   zone: string
 }
 
-// A Card that can be picked up. `zone` travels in the drag data so the drop
-// handler knows where the card came from.
+// A Card that can be picked up AND dropped onto. `zone` travels in both the drag
+// and drop data so the handler knows the source zone (to move) and, when a card
+// is dropped on top of another card, the target card's zone (to swap them).
 export default function DraggableCard({ card, zone }: DraggableCardProps) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: card.id,
     data: { zone },
   })
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: card.id,
+    data: { type: 'card', zone },
+  })
+
+  const setNodeRef = (node: HTMLElement | null) => {
+    setDragRef(node)
+    setDropRef(node)
+  }
 
   return (
     <div
