@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import {
+	LuChevronDown,
+	LuChevronUp,
+	LuArrowRight,
+	LuArmchair,
+} from "react-icons/lu";
+import { FaCrown, FaTrophy } from "react-icons/fa6";
 import {
 	DndContext,
 	DragOverlay,
 	PointerSensor,
 	pointerWithin,
 	rectIntersection,
-	useDroppable,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
@@ -25,10 +30,8 @@ import type {
 	Card as CardModel,
 } from "../game/types";
 import Card from "../components/Card";
-import DraggableCard from "../components/DraggableCard";
 import DropZone from "../components/DropZone";
 import ResultsPanel from "../components/ResultsPanel";
-import ChipTray from "../components/ChipTray";
 import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
@@ -36,6 +39,17 @@ import type { BackKey } from "../cardbacks";
 import type { CSSVars } from "../styleVars";
 import { useWallet, formatUSD } from "../wallet";
 import HandTypes from "../components/HandTypes";
+import {
+	Header,
+	PokerTable,
+	BettingGate,
+	HandZone,
+	SEATS,
+	GAMES_PER_BANKER,
+	TOTAL_GAMES,
+	MIN_CHIP,
+	COMEBACK_STAKE,
+} from "../components/game/pusoy-trese";
 
 interface Zones {
 	hand: CardModel[];
@@ -58,16 +72,6 @@ type Phase =
 	| "revealed"
 	| "gameover";
 type ResultData = BankerRoundResult & { arrangements: Arrangement[] };
-
-const SEATS = 4;
-const GAMES_PER_BANKER = 3;
-const TOTAL_GAMES = SEATS * GAMES_PER_BANKER; // 12
-
-// A player is "out of money" once they can't afford the smallest chip ($5).
-// Instead of staking $0 (no way to recover), they're auto-staked this much per
-// point so they still have a chance to win some back.
-const MIN_CHIP = 5;
-const COMEBACK_STAKE = 50;
 
 const RANK_ORDER = Object.fromEntries(RANKS.map((r, i) => [r, i])) as Record<
 	string,
@@ -355,77 +359,90 @@ export default function PusoyTrese() {
 		return (
 			<div className={shellClass} style={shellStyle}>
 				<div
-					className="flex min-h-screen flex-col gap-6 p-6"
+					className="w-full flex min-h-screen flex-col"
 					style={bgStyle}
 				>
-					<Header
-						theme={theme}
-						setTheme={setTheme}
-						back={back}
-						setBack={setBack}
-						themeOptions={themeOptions}
-						backOptions={backOptions}
-						balance={wallet.balance}
-					/>
-
-					<div className="mx-auto mt-6 w-full max-w-xl rounded-2xl bg-black/25 p-6 ring-1 ring-white/10">
-						<h2 className="text-xl font-semibold">
-							Choose your seat
-						</h2>
-						<p className="mt-1 text-sm opacity-70">
-							The banker rotates every {GAMES_PER_BANKER} games
-							over {TOTAL_GAMES} games total. Pick the seat you
-							want — it decides when you deal as banker.
-						</p>
-
-						<div className="mt-5 grid grid-cols-2 gap-3">
-							{Array.from({ length: SEATS }, (_, s) => {
-								const lo = s * GAMES_PER_BANKER + 1;
-								const hi = lo + GAMES_PER_BANKER - 1;
-								return (
-									<button
-										key={s}
-										onClick={() => beginMatch(s)}
-										className="group rounded-xl bg-white/5 p-4 text-left ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/30"
-									>
-										<div className="flex items-center justify-between">
-											<span className="text-base font-bold">
-												Seat {s + 1}
-											</span>
-											{s === 0 && (
-												<span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-900">
-													Bank first
-												</span>
-											)}
-										</div>
-										<p className="mt-1 text-sm opacity-70">
-											👑 Banker for games {lo}–{hi}
+					<div className="mx-auto w-full flex flex-col gap-6">
+						<Header
+							theme={theme}
+							setTheme={setTheme}
+							back={back}
+							setBack={setBack}
+							themeOptions={themeOptions}
+							backOptions={backOptions}
+							balance={wallet.balance}
+						/>
+						<div className="p-4">
+							<div className="mx-auto mt-6 w-full max-w-2xl rounded-2xl bg-black/35 p-6 ring-1 ring-white/10">
+								<div className="flex gap-3 items-center">
+									<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black/20 ring-1 ring-white/10">
+										<LuArmchair className="h-8 w-8 text-amber-300" />
+									</div>
+									<div className="flex flex-col">
+										<h2 className="text-xl font-semibold">
+											Choose your seat
+										</h2>
+										<p className="mt-1 text-sm opacity-70 leading-tight">
+											The banker rotates every{" "}
+											{GAMES_PER_BANKER} games over{" "}
+											{TOTAL_GAMES} games total. Pick the
+											seat you want — it decides when you
+											deal as banker.
 										</p>
-									</button>
-								);
-							})}
-						</div>
+									</div>
+								</div>
 
-						<p className="mt-5 text-sm opacity-70">
-							Your balance:{" "}
-							<b
-								className={
-									wallet.balance < 0
-										? "text-red-300"
-										: "text-emerald-300"
-								}
-							>
-								{formatUSD(wallet.balance)}
-							</b>
-						</p>
-						{wallet.balance < 5 && (
-							<button
-								onClick={wallet.reset}
-								className="mt-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white/20"
-							>
-								Reset wallet to {formatUSD(1000)}
-							</button>
-						)}
+								<div className="mt-5 flex flex-col sm:grid sm:grid-cols-2 gap-4">
+									{Array.from({ length: SEATS }, (_, s) => {
+										const lo = s * GAMES_PER_BANKER + 1;
+										const hi = lo + GAMES_PER_BANKER - 1;
+										return (
+											<button
+												key={s}
+												onClick={() => beginMatch(s)}
+												className="group rounded-lg bg-white/5 p-4 text-left ring-2 ring-white/25 transition hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
+											>
+												<div className="flex items-center justify-between">
+													<span className="text-base font-bold">
+														Seat {s + 1}
+													</span>
+													{s === 0 && (
+														<span className="rounded-full bg-amber-400 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-900">
+															Bank first
+														</span>
+													)}
+												</div>
+												<p className="mt-2 flex items-center gap-1.5 text-sm opacity-70">
+													<FaCrown className="h-3.5 w-3.5 text-amber-400" />
+													Banker for games {lo}–{hi}
+												</p>
+											</button>
+										);
+									})}
+								</div>
+
+								<p className="mt-5 text-sm opacity-70">
+									Your balance:{" "}
+									<b
+										className={
+											wallet.balance < 0
+												? "text-red-300"
+												: "text-emerald-300"
+										}
+									>
+										{formatUSD(wallet.balance)}
+									</b>
+								</p>
+								{wallet.balance < 5 && (
+									<button
+										onClick={wallet.reset}
+										className="mt-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white/20"
+									>
+										Reset wallet to {formatUSD(1000)}
+									</button>
+								)}
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -443,7 +460,7 @@ export default function PusoyTrese() {
 		return (
 			<div className={shellClass} style={shellStyle}>
 				<div
-					className="flex min-h-screen flex-col gap-6 p-6"
+					className="w-full flex min-h-screen flex-col gap-6"
 					style={bgStyle}
 				>
 					<Header
@@ -456,9 +473,17 @@ export default function PusoyTrese() {
 						balance={wallet.balance}
 					/>
 
-					<div className="mx-auto mt-6 w-full max-w-xl rounded-2xl bg-black/25 p-6 ring-1 ring-white/10">
-						<h2 className="text-2xl font-bold">
-							{youWon ? "🏆 You finished on top!" : "Game over"}
+					<div className="p-4">
+						<div className="mx-auto mt-6 w-full max-w-xl rounded-2xl bg-black/25 p-6 ring-1 ring-white/10">
+						<h2 className="flex items-center gap-2 text-2xl font-bold">
+							{youWon ? (
+								<>
+									<FaTrophy className="h-6 w-6 text-amber-400" />
+									You finished on top!
+								</>
+							) : (
+								"Game over"
+							)}
 						</h2>
 						<p className="mt-1 text-sm opacity-70">
 							All {TOTAL_GAMES} games played. Final standings:
@@ -486,10 +511,11 @@ export default function PusoyTrese() {
 
 						<button
 							onClick={playAgain}
-							className="mt-6 w-full rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300"
+							className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300"
 						>
-							Play again →
+							Play again <LuArrowRight className="h-4 w-4" />
 						</button>
+					</div>
 					</div>
 				</div>
 			</div>
@@ -524,7 +550,7 @@ export default function PusoyTrese() {
 				onDragEnd={handleDragEnd}
 			>
 				<div
-					className="flex min-h-screen flex-col gap-4 p-4 sm:p-6"
+					className="w-full flex min-h-dvh flex-col"
 					style={bgStyle}
 				>
 					<Header
@@ -537,11 +563,15 @@ export default function PusoyTrese() {
 						balance={wallet.balance}
 					/>
 
-					{/* Table-level notices */}
+					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
+						{/* Table-level notices */}
 					{phase !== "betting" && humanIsBanker && (
-						<div className="rounded-lg bg-amber-400/20 px-4 py-2 text-sm font-medium ring-1 ring-amber-400/40">
-							👑 You are the banker this game — you play every
-							other player at their stake.
+						<div className="flex items-center gap-2 rounded-lg bg-amber-400/20 px-4 py-2 text-sm font-medium ring-1 ring-amber-400/40">
+							<FaCrown className="h-4 w-4 shrink-0 text-amber-400" />
+							<span>
+								You are the banker this game — you play every
+								other player at their stake.
+							</span>
 						</div>
 					)}
 					{phase !== "betting" &&
@@ -553,7 +583,6 @@ export default function PusoyTrese() {
 								some back.
 							</div>
 						)}
-
 					{/* Oval felt table: seats around the rim, pot/round info
 					    in the center. Stays as the calm background while the
 					    betting / arrange panels float over the bottom. */}
@@ -568,7 +597,7 @@ export default function PusoyTrese() {
 						gameIndex={gameIndex}
 						totalGames={TOTAL_GAMES}
 					/>
-
+					</div>
 					{phase === "betting" ? (
 						<div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-2 sm:px-4 sm:pb-4">
 							<BettingGate
@@ -603,7 +632,8 @@ export default function PusoyTrese() {
 												}
 												className="flex items-center gap-1.5 rounded-lg bg-black/25 px-3 py-1.5 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
 											>
-												<span>▼</span> Hide
+												<LuChevronDown className="h-4 w-4" />{" "}
+												Hide
 											</button>
 										</div>
 
@@ -687,20 +717,20 @@ export default function PusoyTrese() {
 												aria-expanded={showHandTypes}
 												className="flex w-full items-center justify-center gap-2 rounded-lg bg-black/25 px-4 py-2.5 text-sm font-medium ring-1 ring-white/10 transition hover:bg-black/35"
 											>
-												<span
-													className="inline-block text-xs transition-transform"
+												<LuChevronDown
+													className="h-4 w-4 transition-transform"
 													style={{
 														transform: showHandTypes
 															? "rotate(180deg)"
 															: "rotate(0deg)",
 													}}
-												>
-													▼
-												</span>
+												/>
 												<span>Hand Types Guide</span>
 											</button>
 											{showHandTypes && (
-												<HandTypes open={showHandTypes} />
+												<HandTypes
+													open={showHandTypes}
+												/>
 											)}
 										</div>
 									</div>
@@ -714,7 +744,7 @@ export default function PusoyTrese() {
 											"color-mix(in srgb, var(--table-felt-2) 92%, black)",
 									}}
 								>
-									<span>▲</span>
+									<LuChevronUp className="h-4 w-4" />
 									Arrange your hand
 									<span className="opacity-60">
 										· {zones.hand.length} in hand
@@ -748,382 +778,6 @@ export default function PusoyTrese() {
 					onNext={nextGame}
 				/>
 			)}
-		</div>
-	);
-}
-
-interface BettingGateProps {
-	banker: string;
-	balance: number;
-	stake: number;
-	setStake: (v: number) => void;
-	onPlace: () => void;
-}
-
-interface PokerTableProps {
-	names: string[];
-	balances: number[];
-	stakes: number[];
-	banker: number;
-	humanSeat: number;
-	hands: CardModel[][];
-	back: BackKey;
-	gameIndex: number;
-	totalGames: number;
-}
-
-// One avatar/info plaque for a player around the table. Opponents also show a
-// small fanned stack of face-down cards above the plaque.
-function Seat({
-	name,
-	balance,
-	stake,
-	isBanker,
-	isYou,
-	hand,
-	back,
-}: {
-	name: string;
-	balance: number;
-	stake: number;
-	isBanker: boolean;
-	isYou: boolean;
-	hand?: CardModel[];
-	back: BackKey;
-}) {
-	return (
-		<div className="flex flex-col items-center gap-1.5">
-			{hand && (
-				<div className="flex" style={{ "--card-w": "1.5rem" } as CSSVars}>
-					{hand.slice(0, 5).map((c, j) => (
-						<div
-							key={c.id}
-							style={{
-								marginLeft:
-									j === 0
-										? 0
-										: "calc(var(--card-w) * -0.55)",
-							}}
-						>
-							<Card faceDown back={back} />
-						</div>
-					))}
-				</div>
-			)}
-			<div
-				className={`min-w-24 rounded-xl px-3 py-1.5 text-center shadow-lg ring-1 backdrop-blur ${
-					isYou
-						? "bg-emerald-500/25 ring-emerald-400/50"
-						: "bg-black/40 ring-white/15"
-				}`}
-			>
-				<div className="flex items-center justify-center gap-1 text-sm font-semibold leading-tight">
-					{isBanker && <span title="Banker">👑</span>}
-					<span>{isYou ? "You" : name}</span>
-				</div>
-				<div className="tabular-nums text-xs opacity-90">
-					{formatUSD(balance)}
-				</div>
-				<div className="text-[10px] opacity-60">
-					{isBanker ? "banking" : `stake ${formatUSD(stake)}`}
-				</div>
-			</div>
-		</div>
-	);
-}
-
-function PokerTable({
-	names,
-	balances,
-	stakes,
-	banker,
-	humanSeat,
-	hands,
-	back,
-	gameIndex,
-	totalGames,
-}: PokerTableProps) {
-	// Opponents in seat order; placed top / left / right around the rim.
-	const opponents = names
-		.map((_, s) => s)
-		.filter((s) => s !== humanSeat);
-	const slots = [
-		"top-[2%] left-1/2 -translate-x-1/2",
-		"top-[32%] left-[2%]",
-		"top-[32%] right-[2%]",
-	];
-
-	return (
-		<div className="relative mx-auto my-1 w-full max-w-2xl flex-1 min-h-[56vh]">
-			{/* Felt oval with a dark wooden rim */}
-			<div
-				className="absolute inset-0 rounded-[46%] border-[6px] border-black/40 shadow-[inset_0_0_70px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
-				style={{
-					background:
-						"radial-gradient(ellipse at 50% 38%, var(--table-felt), var(--table-felt-2))",
-				}}
-			/>
-
-			{/* Center pot / round info */}
-			<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-				<div className="text-3xl font-bold tabular-nums opacity-90">
-					{gameIndex + 1}
-					<span className="opacity-50"> / {totalGames}</span>
-				</div>
-				<div className="mt-1 text-xs opacity-70">
-					👑 Banker:{" "}
-					<b>{banker === humanSeat ? "You" : names[banker]}</b>
-				</div>
-			</div>
-
-			{/* Opponent seats around the rim */}
-			{opponents.map((s, i) => (
-				<div key={s} className={`absolute ${slots[i]}`}>
-					<Seat
-						name={names[s]}
-						balance={balances[s]}
-						stake={stakes[s]}
-						isBanker={s === banker}
-						isYou={false}
-						hand={hands[s]}
-						back={back}
-					/>
-				</div>
-			))}
-
-			{/* Your seat at the bottom (lifted clear of the bottom panel) */}
-			<div className="absolute bottom-[9%] left-1/2 -translate-x-1/2">
-				<Seat
-					name={names[humanSeat]}
-					balance={balances[humanSeat]}
-					stake={stakes[humanSeat]}
-					isBanker={humanSeat === banker}
-					isYou={true}
-					back={back}
-				/>
-			</div>
-		</div>
-	);
-}
-
-function BettingGate({
-	banker,
-	balance,
-	stake,
-	setStake,
-	onPlace,
-}: BettingGateProps) {
-	return (
-		<div
-			className="mx-auto w-full max-w-md rounded-2xl p-5 shadow-2xl ring-1 ring-white/15"
-			style={{
-				backgroundColor:
-					"color-mix(in srgb, var(--table-felt-2) 94%, black)",
-			}}
-		>
-			<h2 className="text-lg font-semibold">Place your stake</h2>
-			<p className="mt-1 text-sm opacity-70">
-				👑 {banker} is the banker. Pick chips for your per-point stake —
-				you win or lose that much for every point you beat or trail the
-				banker by.
-			</p>
-			<div className="mt-4">
-				<ChipTray balance={balance} value={stake} onChange={setStake} />
-			</div>
-			<button
-				onClick={onPlace}
-				disabled={stake < MIN_CHIP}
-				className="mt-4 w-full rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
-			>
-				{stake < MIN_CHIP
-					? "Add at least one chip"
-					: `Stake ${formatUSD(stake)}/pt → see cards`}
-			</button>
-		</div>
-	);
-}
-
-function HandZone({ cards }: { cards: CardModel[] }) {
-	const { setNodeRef, isOver } = useDroppable({ id: "hand" });
-	return (
-		<div
-			ref={setNodeRef}
-			className={`mt-auto rounded-xl border p-3 transition-colors ${
-				isOver
-					? "border-white/60 bg-white/10"
-					: "border-white/15 bg-black/15"
-			}`}
-		>
-			<p className="mb-2 text-sm opacity-70">
-				Holding area — drag a card here to set it aside, or swap cards
-				by dropping one onto another
-			</p>
-			<div className="flex min-h-[2rem] flex-wrap gap-2">
-				{cards.map((card) => (
-					<DraggableCard key={card.id} card={card} zone="hand" />
-				))}
-			</div>
-		</div>
-	);
-}
-
-interface HeaderProps {
-	theme: ThemeKey;
-	setTheme: (t: ThemeKey) => void;
-	back: BackKey;
-	setBack: (b: BackKey) => void;
-	themeOptions: [ThemeKey, string][];
-	backOptions: [BackKey, string][];
-	balance: number;
-}
-
-function Header({
-	theme,
-	setTheme,
-	back,
-	setBack,
-	themeOptions,
-	backOptions,
-	balance,
-}: HeaderProps) {
-	return (
-		<header className="flex flex-wrap items-center gap-x-8 gap-y-4">
-			<div className="flex items-center gap-3">
-				<Link
-					to="/"
-					className="rounded-lg bg-black/20 px-3 py-1.5 text-sm font-medium transition hover:bg-black/30"
-					title="Back to games"
-				>
-					← Games
-				</Link>
-				<h1 className="text-xl font-semibold tracking-tight">
-					Pusoy Trese
-				</h1>
-			</div>
-			<div className="mr-auto rounded-lg bg-black/25 px-4 py-1.5 text-sm">
-				<span className="opacity-60">Balance</span>{" "}
-				<b
-					className={`tabular-nums ${balance < 0 ? "text-red-300" : "text-emerald-300"}`}
-				>
-					{formatUSD(balance)}
-				</b>
-			</div>
-			<SettingsMenu>
-				<Picker
-					label="Theme"
-					options={themeOptions}
-					value={theme}
-					onChange={setTheme}
-				/>
-				<Picker
-					label="Card back"
-					options={backOptions}
-					value={back}
-					onChange={setBack}
-				/>
-			</SettingsMenu>
-		</header>
-	);
-}
-
-function SettingsMenu({ children }: { children: React.ReactNode }) {
-	const [open, setOpen] = useState(false);
-	const ref = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		if (!open) return;
-		function onPointerDown(e: PointerEvent) {
-			if (ref.current && !ref.current.contains(e.target as Node))
-				setOpen(false);
-		}
-		function onKeyDown(e: KeyboardEvent) {
-			if (e.key === "Escape") setOpen(false);
-		}
-		document.addEventListener("pointerdown", onPointerDown);
-		document.addEventListener("keydown", onKeyDown);
-		return () => {
-			document.removeEventListener("pointerdown", onPointerDown);
-			document.removeEventListener("keydown", onKeyDown);
-		};
-	}, [open]);
-
-	return (
-		<div ref={ref} className="relative">
-			<button
-				onClick={() => setOpen((v) => !v)}
-				aria-haspopup="true"
-				aria-expanded={open}
-				title="Settings"
-				className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-					open
-						? "bg-white/90 text-slate-900"
-						: "bg-black/20 text-white/80 hover:bg-black/30"
-				}`}
-			>
-				<svg
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="2"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					className="h-4 w-4"
-					aria-hidden="true"
-				>
-					<circle cx="12" cy="12" r="3" />
-					<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-				</svg>
-				Settings
-			</button>
-			{open && (
-				<div
-					className="absolute right-0 top-full z-20 mt-2 flex flex-col gap-4 rounded-xl border p-4 shadow-xl backdrop-blur"
-					style={{
-						backgroundColor:
-							"color-mix(in srgb, var(--table-felt-2) 92%, black)",
-						borderColor:
-							"color-mix(in srgb, var(--ui-text) 18%, transparent)",
-						color: "var(--ui-text)",
-					}}
-				>
-					{children}
-				</div>
-			)}
-		</div>
-	);
-}
-
-interface PickerProps<T extends string> {
-	label: string;
-	options: [T, string][];
-	value: T;
-	onChange: (value: T) => void;
-}
-
-function Picker<T extends string>({
-	label,
-	options,
-	value,
-	onChange,
-}: PickerProps<T>) {
-	return (
-		<div className="flex items-center gap-2">
-			<span className="text-sm opacity-70">{label}</span>
-			<div className="flex gap-1 rounded-lg bg-black/20 p-1">
-				{options.map(([key, text]) => (
-					<button
-						key={key}
-						onClick={() => onChange(key)}
-						className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-							value === key
-								? "bg-white/90 text-slate-900"
-								: "text-white/80 hover:bg-white/10"
-						}`}
-					>
-						{text}
-					</button>
-				))}
-			</div>
 		</div>
 	);
 }
