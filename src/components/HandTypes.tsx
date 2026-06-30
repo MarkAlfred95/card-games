@@ -1,10 +1,17 @@
 import Card from "./Card";
 
-function HandTypes() {
+interface HandTypesProps {
+	open?: boolean;
+}
+
+function HandTypes({ open = true }: HandTypesProps) {
 	return (
-		<>
-			{/* Types of Builds Guide */}
-			<div className="w-100 max-h-[75.5dvh] flex flex-col overflow-hidden shrink-0 rounded-lg bg-black/25 text-sm ring-1 ring-white/10">
+		<div
+			className={`w-full max-w-full lg:w-100 max-h-[75.5dvh] flex flex-col overflow-hidden shrink-0 rounded-lg bg-black/25 text-sm ring-1 ring-white/10 ${
+				!open ? "max-lg:hidden" : ""
+			}`}
+			style={{ "--card-w": "clamp(2.8rem, 1rem + 2.2vw, 5.25rem)" } as React.CSSProperties & Record<string, string>}
+		>
 				<h2 className="text-lg font-semibold p-4 border-b border-white/10">
 					Hand Types
 				</h2>
@@ -214,8 +221,7 @@ function HandTypes() {
 						</div>
 					</div>
 				</div>
-			</div>
-		</>
+		</div>
 	);
 }
 

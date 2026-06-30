@@ -149,6 +149,8 @@ export default function PusoyTrese() {
 	const [humanStake, setHumanStake] = useState<number>(0);
 	const [activeCard, setActiveCard] = useState<CardModel | null>(null);
 	const [result, setResult] = useState<ResultData | null>(null);
+	const [showHandTypes, setShowHandTypes] = useState(false);
+	const [arrangeOpen, setArrangeOpen] = useState(true);
 
 	const { zones, hands } = round;
 	const banker = bankerOf(gameIndex);
@@ -340,7 +342,7 @@ export default function PusoyTrese() {
 		(k) => [k, BACKS[k].label] as [BackKey, string],
 	);
 
-	const shellStyle = { "--card-w": "4.6rem" } as CSSVars;
+	const shellStyle = {} as CSSVars;
 	const shellClass = `${THEMES[theme].className} min-h-screen text-[color:var(--ui-text)]`;
 	const bgStyle = {
 		background:
@@ -522,7 +524,7 @@ export default function PusoyTrese() {
 				onDragEnd={handleDragEnd}
 			>
 				<div
-					className="flex min-h-screen flex-col gap-4 p-6"
+					className="flex min-h-screen flex-col gap-4 p-4 sm:p-6"
 					style={bgStyle}
 				>
 					<Header
@@ -535,173 +537,190 @@ export default function PusoyTrese() {
 						balance={wallet.balance}
 					/>
 
-					{/* Match progress */}
-					<div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-black/15 px-4 py-2 text-sm">
-						<span>
-							<span className="opacity-60">Game</span>{" "}
-							<b>{gameIndex + 1}</b>{" "}
-							<span className="opacity-60">of {TOTAL_GAMES}</span>
-						</span>
-						<span>
-							👑 <span className="opacity-60">Banker:</span>{" "}
-							<b>{humanIsBanker ? "You" : names[banker]}</b>
-						</span>
-					</div>
-
-					{/* Seat scoreboard: balance, banker crown, stake this round */}
-					<div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-						{names.map((n, s) => (
-							<div
-								key={s}
-								className={`rounded-lg px-3 py-2 text-sm ring-1 ${
-									s === humanSeat
-										? "bg-emerald-500/10 ring-emerald-400/30"
-										: "bg-black/20 ring-white/5"
-								}`}
-							>
-								<div className="flex items-center gap-1.5">
-									{s === banker && (
-										<span title="Banker">👑</span>
-									)}
-									<span className="font-semibold">{n}</span>
-								</div>
-								<div className="tabular-nums">
-									{formatUSD(balances[s])}
-								</div>
-								<div className="text-xs opacity-60">
-									{s === banker
-										? "banking"
-										: `stake ${formatUSD(stakes[s])}`}
-								</div>
+					{/* Table-level notices */}
+					{phase !== "betting" && humanIsBanker && (
+						<div className="rounded-lg bg-amber-400/20 px-4 py-2 text-sm font-medium ring-1 ring-amber-400/40">
+							👑 You are the banker this game — you play every
+							other player at their stake.
+						</div>
+					)}
+					{phase !== "betting" &&
+						!humanIsBanker &&
+						wallet.balance < MIN_CHIP && (
+							<div className="rounded-lg bg-sky-400/20 px-4 py-2 text-sm font-medium ring-1 ring-sky-400/40">
+								💸 Out of money — you're auto-staked{" "}
+								{formatUSD(COMEBACK_STAKE)}/pt this game to win
+								some back.
 							</div>
-						))}
-					</div>
-
-					{/* Opponents (face down while you play) */}
-					<div
-						className="flex flex-wrap gap-x-8 gap-y-3"
-						style={{ "--card-w": "2.6rem" } as CSSVars}
-					>
-						{hands.map((hand, s) =>
-							s === humanSeat ? null : (
-								<div
-									key={s}
-									className="flex items-center gap-2"
-								>
-									<span className="text-xs opacity-70">
-										{s === banker && "👑 "}
-										{names[s]}
-									</span>
-									<div className="flex">
-										{hand.slice(0, 6).map((c, j) => (
-											<div
-												key={c.id}
-												style={{
-													marginLeft:
-														j === 0
-															? 0
-															: "calc(var(--card-w) * -0.6)",
-												}}
-											>
-												<Card faceDown back={back} />
-											</div>
-										))}
-									</div>
-								</div>
-							),
 						)}
-					</div>
+
+					{/* Oval felt table: seats around the rim, pot/round info
+					    in the center. Stays as the calm background while the
+					    betting / arrange panels float over the bottom. */}
+					<PokerTable
+						names={names}
+						balances={balances}
+						stakes={stakes}
+						banker={banker}
+						humanSeat={humanSeat}
+						hands={hands}
+						back={back}
+						gameIndex={gameIndex}
+						totalGames={TOTAL_GAMES}
+					/>
 
 					{phase === "betting" ? (
-						<BettingGate
-							banker={names[banker]}
-							balance={wallet.balance}
-							stake={humanStake}
-							setStake={setHumanStake}
-							onPlace={placeBet}
-						/>
+						<div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-2 sm:px-4 sm:pb-4">
+							<BettingGate
+								banker={names[banker]}
+								balance={wallet.balance}
+								stake={humanStake}
+								setStake={setHumanStake}
+								onPlace={placeBet}
+							/>
+						</div>
 					) : (
 						<>
-							{humanIsBanker && (
-								<div className="rounded-lg bg-amber-400/20 px-4 py-2 text-sm font-medium ring-1 ring-amber-400/40">
-									👑 You are the banker this game — you play
-									every other player at their stake.
-								</div>
-							)}
-
-							{!humanIsBanker && wallet.balance < MIN_CHIP && (
-								<div className="rounded-lg bg-sky-400/20 px-4 py-2 text-sm font-medium ring-1 ring-sky-400/40">
-									💸 Out of money — you're auto-staked{" "}
-									{formatUSD(COMEBACK_STAKE)}/pt this game to
-									win some back.
-								</div>
-							)}
-
-							<div className="w-full flex gap-4 relative">
-								<div className=" flex flex-col flex-1 gap-4">
-									{/* Status + score action */}
-									<div className="flex flex-wrap items-center gap-3">
-										<div
-											className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium backdrop-blur ${statusBar.tone}`}
-										>
-											{statusBar.text}
+							{/* Arrangement — floats in a bottom sheet over the
+							    table so the seats/opponents stay visible behind. */}
+							{arrangeOpen ? (
+								<div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-2 sm:px-4 sm:pb-4">
+									<div
+										className="flex max-h-[82dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/15 shadow-2xl backdrop-blur"
+										style={{
+											backgroundColor:
+												"color-mix(in srgb, var(--table-felt-2) 92%, black)",
+										}}
+									>
+										{/* Sheet header: grab handle + collapse */}
+										<div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
+											<span className="text-sm font-semibold opacity-80">
+												Arrange your hand
+											</span>
+											<button
+												onClick={() =>
+													setArrangeOpen(false)
+												}
+												className="flex items-center gap-1.5 rounded-lg bg-black/25 px-3 py-1.5 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
+											>
+												<span>▼</span> Hide
+											</button>
 										</div>
-										<button
-											onClick={handleScore}
-											disabled={
-												!status.complete ||
-												phase === "scoring"
-											}
-											className="rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
-										>
-											{phase === "scoring"
-												? "Scoring…"
-												: "Score hand"}
-										</button>
-									</div>
 
-									{/* Arrangement zones: front (weakest) → back (strongest) */}
-									<div className="grid gap-3">
-										<DropZone
-											id="front"
-											label="Front"
-											cards={zones.front}
-											capacity={3}
-											handName={status.ev.front?.name}
-											status={
-												status.foulMF ? "foul" : null
-											}
-										/>
-										<DropZone
-											id="middle"
-											label="Middle"
-											cards={zones.middle}
-											capacity={5}
-											handName={status.ev.middle?.name}
-											status={
-												status.foulBM || status.foulMF
-													? "foul"
-													: null
-											}
-										/>
-										<DropZone
-											id="back"
-											label="Back"
-											cards={zones.back}
-											capacity={5}
-											handName={status.ev.back?.name}
-											status={
-												status.foulBM ? "foul" : null
-											}
-										/>
-									</div>
+										<div className="flex flex-col gap-4 overflow-y-auto p-4">
+											{/* Status + score action */}
+											<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+												<div
+													className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium backdrop-blur ${statusBar.tone}`}
+												>
+													{statusBar.text}
+												</div>
+												<button
+													onClick={handleScore}
+													disabled={
+														!status.complete ||
+														phase === "scoring"
+													}
+													className="w-full rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+												>
+													{phase === "scoring"
+														? "Scoring…"
+														: "Score hand"}
+												</button>
+											</div>
 
-									{/* Staging hand */}
-									<HandZone cards={zones.hand} />
+											{/* Arrangement zones: front (weakest) → back (strongest) */}
+											<div className="grid gap-3">
+												<DropZone
+													id="front"
+													label="Front"
+													cards={zones.front}
+													capacity={3}
+													handName={
+														status.ev.front?.name
+													}
+													status={
+														status.foulMF
+															? "foul"
+															: null
+													}
+												/>
+												<DropZone
+													id="middle"
+													label="Middle"
+													cards={zones.middle}
+													capacity={5}
+													handName={
+														status.ev.middle?.name
+													}
+													status={
+														status.foulBM ||
+														status.foulMF
+															? "foul"
+															: null
+													}
+												/>
+												<DropZone
+													id="back"
+													label="Back"
+													cards={zones.back}
+													capacity={5}
+													handName={
+														status.ev.back?.name
+													}
+													status={
+														status.foulBM
+															? "foul"
+															: null
+													}
+												/>
+											</div>
+
+											{/* Staging hand */}
+											<HandZone cards={zones.hand} />
+
+											{/* Hand types reference */}
+											<button
+												onClick={() =>
+													setShowHandTypes((v) => !v)
+												}
+												aria-expanded={showHandTypes}
+												className="flex w-full items-center justify-center gap-2 rounded-lg bg-black/25 px-4 py-2.5 text-sm font-medium ring-1 ring-white/10 transition hover:bg-black/35"
+											>
+												<span
+													className="inline-block text-xs transition-transform"
+													style={{
+														transform: showHandTypes
+															? "rotate(180deg)"
+															: "rotate(0deg)",
+													}}
+												>
+													▼
+												</span>
+												<span>Hand Types Guide</span>
+											</button>
+											{showHandTypes && (
+												<HandTypes open={showHandTypes} />
+											)}
+										</div>
+									</div>
 								</div>
-
-								<HandTypes />
-							</div>
+							) : (
+								<button
+									onClick={() => setArrangeOpen(true)}
+									className="fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-t-2xl border-t border-white/15 px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur"
+									style={{
+										backgroundColor:
+											"color-mix(in srgb, var(--table-felt-2) 92%, black)",
+									}}
+								>
+									<span>▲</span>
+									Arrange your hand
+									<span className="opacity-60">
+										· {zones.hand.length} in hand
+									</span>
+								</button>
+							)}
 						</>
 					)}
 				</div>
@@ -741,6 +760,152 @@ interface BettingGateProps {
 	onPlace: () => void;
 }
 
+interface PokerTableProps {
+	names: string[];
+	balances: number[];
+	stakes: number[];
+	banker: number;
+	humanSeat: number;
+	hands: CardModel[][];
+	back: BackKey;
+	gameIndex: number;
+	totalGames: number;
+}
+
+// One avatar/info plaque for a player around the table. Opponents also show a
+// small fanned stack of face-down cards above the plaque.
+function Seat({
+	name,
+	balance,
+	stake,
+	isBanker,
+	isYou,
+	hand,
+	back,
+}: {
+	name: string;
+	balance: number;
+	stake: number;
+	isBanker: boolean;
+	isYou: boolean;
+	hand?: CardModel[];
+	back: BackKey;
+}) {
+	return (
+		<div className="flex flex-col items-center gap-1.5">
+			{hand && (
+				<div className="flex" style={{ "--card-w": "1.5rem" } as CSSVars}>
+					{hand.slice(0, 5).map((c, j) => (
+						<div
+							key={c.id}
+							style={{
+								marginLeft:
+									j === 0
+										? 0
+										: "calc(var(--card-w) * -0.55)",
+							}}
+						>
+							<Card faceDown back={back} />
+						</div>
+					))}
+				</div>
+			)}
+			<div
+				className={`min-w-24 rounded-xl px-3 py-1.5 text-center shadow-lg ring-1 backdrop-blur ${
+					isYou
+						? "bg-emerald-500/25 ring-emerald-400/50"
+						: "bg-black/40 ring-white/15"
+				}`}
+			>
+				<div className="flex items-center justify-center gap-1 text-sm font-semibold leading-tight">
+					{isBanker && <span title="Banker">👑</span>}
+					<span>{isYou ? "You" : name}</span>
+				</div>
+				<div className="tabular-nums text-xs opacity-90">
+					{formatUSD(balance)}
+				</div>
+				<div className="text-[10px] opacity-60">
+					{isBanker ? "banking" : `stake ${formatUSD(stake)}`}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function PokerTable({
+	names,
+	balances,
+	stakes,
+	banker,
+	humanSeat,
+	hands,
+	back,
+	gameIndex,
+	totalGames,
+}: PokerTableProps) {
+	// Opponents in seat order; placed top / left / right around the rim.
+	const opponents = names
+		.map((_, s) => s)
+		.filter((s) => s !== humanSeat);
+	const slots = [
+		"top-[2%] left-1/2 -translate-x-1/2",
+		"top-[32%] left-[2%]",
+		"top-[32%] right-[2%]",
+	];
+
+	return (
+		<div className="relative mx-auto my-1 w-full max-w-2xl flex-1 min-h-[56vh]">
+			{/* Felt oval with a dark wooden rim */}
+			<div
+				className="absolute inset-0 rounded-[46%] border-[6px] border-black/40 shadow-[inset_0_0_70px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
+				style={{
+					background:
+						"radial-gradient(ellipse at 50% 38%, var(--table-felt), var(--table-felt-2))",
+				}}
+			/>
+
+			{/* Center pot / round info */}
+			<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+				<div className="text-3xl font-bold tabular-nums opacity-90">
+					{gameIndex + 1}
+					<span className="opacity-50"> / {totalGames}</span>
+				</div>
+				<div className="mt-1 text-xs opacity-70">
+					👑 Banker:{" "}
+					<b>{banker === humanSeat ? "You" : names[banker]}</b>
+				</div>
+			</div>
+
+			{/* Opponent seats around the rim */}
+			{opponents.map((s, i) => (
+				<div key={s} className={`absolute ${slots[i]}`}>
+					<Seat
+						name={names[s]}
+						balance={balances[s]}
+						stake={stakes[s]}
+						isBanker={s === banker}
+						isYou={false}
+						hand={hands[s]}
+						back={back}
+					/>
+				</div>
+			))}
+
+			{/* Your seat at the bottom (lifted clear of the bottom panel) */}
+			<div className="absolute bottom-[9%] left-1/2 -translate-x-1/2">
+				<Seat
+					name={names[humanSeat]}
+					balance={balances[humanSeat]}
+					stake={stakes[humanSeat]}
+					isBanker={humanSeat === banker}
+					isYou={true}
+					back={back}
+				/>
+			</div>
+		</div>
+	);
+}
+
 function BettingGate({
 	banker,
 	balance,
@@ -749,7 +914,13 @@ function BettingGate({
 	onPlace,
 }: BettingGateProps) {
 	return (
-		<div className="mx-auto mt-2 w-full max-w-md rounded-2xl bg-black/25 p-5 ring-1 ring-white/10">
+		<div
+			className="mx-auto w-full max-w-md rounded-2xl p-5 shadow-2xl ring-1 ring-white/15"
+			style={{
+				backgroundColor:
+					"color-mix(in srgb, var(--table-felt-2) 94%, black)",
+			}}
+		>
 			<h2 className="text-lg font-semibold">Place your stake</h2>
 			<p className="mt-1 text-sm opacity-70">
 				👑 {banker} is the banker. Pick chips for your per-point stake —
@@ -817,7 +988,7 @@ function Header({
 }: HeaderProps) {
 	return (
 		<header className="flex flex-wrap items-center gap-x-8 gap-y-4">
-			<div className="mr-auto flex items-center gap-3">
+			<div className="flex items-center gap-3">
 				<Link
 					to="/"
 					className="rounded-lg bg-black/20 px-3 py-1.5 text-sm font-medium transition hover:bg-black/30"
@@ -829,7 +1000,7 @@ function Header({
 					Pusoy Trese
 				</h1>
 			</div>
-			<div className="rounded-lg bg-black/25 px-4 py-1.5 text-sm">
+			<div className="mr-auto rounded-lg bg-black/25 px-4 py-1.5 text-sm">
 				<span className="opacity-60">Balance</span>{" "}
 				<b
 					className={`tabular-nums ${balance < 0 ? "text-red-300" : "text-emerald-300"}`}
