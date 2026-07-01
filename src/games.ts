@@ -1,7 +1,7 @@
 // Registry of card games in the hub. Add a game here: give it metadata, a
 // `path`, and (when playable) a `component`. The home page renders a card per
 // entry and the router wires routes for every game whose status is 'available'.
-import type { ComponentType } from 'react'
+import { lazy, type ComponentType } from 'react'
 import type { Rank, Suit } from './game/types'
 import PusoyTrese from './pages/PusoyTrese'
 
@@ -36,6 +36,23 @@ export const GAMES: Game[] = [
       { rank: 'Q', suit: 'S' },
     ],
     component: PusoyTrese,
+  },
+  {
+    id: 'poker',
+    name: "Texas Hold'em",
+    tagline: 'No-limit poker',
+    description:
+      "Face 4 bot opponents at a no-limit Hold'em table. Buy in for $500 and outplay, outbluff, or outluck the competition.",
+    players: '5 players',
+    path: '/games/poker',
+    status: 'available',
+    accent: '#7c3aed',
+    preview: [
+      { rank: 'A', suit: 'S' },
+      { rank: 'K', suit: 'H' },
+      { rank: 'A', suit: 'H' },
+    ],
+    component: lazy(() => import('./pages/Poker')),
   },
   {
     id: 'pusoy-dos',

@@ -2,8 +2,13 @@
 
 /* Sizing is shared across themes; everything scales from --card-w. */
 :root {
-  --card-w: 5.25rem;
-  --radius-card: 0.55rem;
+	--card-w: clamp(2.8rem, 1rem + 2.2vw, 5.25rem);
+	--radius-card: 0.55rem;
+	overscroll-behavior-y: none;
+}
+
+* {
+	box-sizing: border-box;
 }
 
 /* ── Themes ──────────────────────────────────────────────────────────────
@@ -11,57 +16,102 @@
    card faces are light in every theme. Add a theme here + in src/themes.js. */
 
 .theme-classic {
-  --card-face: #fdfdfb;
-  --card-border: #d4d4d8;
-  --suit-red: #d4283b;
-  --suit-black: #1b1b1f;
-  --card-selected: #f5c542;
-  --card-back-bg: #1d4ed8;
-  --card-back-ink: #bfdbfe;
-  --table-felt: #1a8a52;
-  --table-felt-2: #0e5235;
-  --ui-text: #f8fafc;
+	--card-face: #fdfdfb;
+	--card-border: #d4d4d8;
+	--suit-red: #d4283b;
+	--suit-black: #1b1b1f;
+	--card-selected: #f5c542;
+	--card-back-bg: #1d4ed8;
+	--card-back-ink: #bfdbfe;
+	--table-felt: #1a8a52;
+	--table-felt-2: #0e5235;
+	--ui-text: #f8fafc;
 }
 
 .theme-midnight {
-  --card-face: #f4f4f5;
-  --card-border: #3f3f46;
-  --suit-red: #e11d48;
-  --suit-black: #18181b;
-  --card-selected: #a78bfa;
-  --card-back-bg: #4c1d95;
-  --card-back-ink: #c4b5fd;
-  --table-felt: #1e293b;
-  --table-felt-2: #0f172a;
-  --ui-text: #e2e8f0;
+	--card-face: #f4f4f5;
+	--card-border: #3f3f46;
+	--suit-red: #e11d48;
+	--suit-black: #18181b;
+	--card-selected: #a78bfa;
+	--card-back-bg: #4c1d95;
+	--card-back-ink: #c4b5fd;
+	--table-felt: #1e293b;
+	--table-felt-2: #0f172a;
+	--ui-text: #e2e8f0;
 }
 
 .theme-crimson {
-  --card-face: #fbf6ec;
-  --card-border: #c9b58c;
-  --suit-red: #b91c1c;
-  --suit-black: #292524;
-  --card-selected: #eab308;
-  --card-back-bg: #7f1d1d;
-  --card-back-ink: #f0c674;
-  --table-felt: #7f1d1d;
-  --table-felt-2: #4c0f0f;
-  --ui-text: #fde68a;
+	--card-face: #fbf6ec;
+	--card-border: #c9b58c;
+	--suit-red: #b91c1c;
+	--suit-black: #292524;
+	--card-selected: #eab308;
+	--card-back-bg: #7f1d1d;
+	--card-back-ink: #f0c674;
+	--table-felt: #7f1d1d;
+	--table-felt-2: #4c0f0f;
+	--ui-text: #fde68a;
 }
 
 .theme-ocean {
-  --card-face: #ffffff;
-  --card-border: #bae6fd;
-  --suit-red: #dc2626;
-  --suit-black: #0f172a;
-  --card-selected: #22d3ee;
-  --card-back-bg: #0e7490;
-  --card-back-ink: #a5f3fc;
-  --table-felt: #0d9488;
-  --table-felt-2: #115e59;
-  --ui-text: #ecfeff;
+	--card-face: #ffffff;
+	--card-border: #bae6fd;
+	--suit-red: #dc2626;
+	--suit-black: #0f172a;
+	--card-selected: #22d3ee;
+	--card-back-bg: #0e7490;
+	--card-back-ink: #a5f3fc;
+	--table-felt: #0d9488;
+	--table-felt-2: #115e59;
+	--ui-text: #ecfeff;
 }
 
 body {
-  margin: 0;
+	margin: 0;
+}
+
+@media (min-width: 1024px) {
+	:root {
+		--card-w: clamp(3rem, 1rem + 3.5vw, 6.5rem);
+	}
+}
+
+/* ── Poker animations ─────────────────────────────────────────────────── */
+
+@keyframes dealCard {
+  from {
+    opacity: 0;
+    transform: translateY(-48px) scale(0.75) rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes communityReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) rotateY(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateY(0deg);
+  }
+}
+
+@keyframes chipFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+
+@keyframes winnerPulse {
+  0%, 100% { box-shadow: 0 0 12px #facc15, 0 0 28px #facc1566; }
+  50%       { box-shadow: 0 0 24px #facc15, 0 0 56px #facc1599; }
+}
+
+@keyframes actionBadgePop {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
 }
