@@ -31,7 +31,6 @@ import type {
 } from "../game/types";
 import Card from "../components/Card";
 import DropZone from "../components/DropZone";
-import ResultsPanel from "../components/ResultsPanel";
 import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
@@ -596,6 +595,12 @@ export default function PusoyTrese() {
 						back={back}
 						gameIndex={gameIndex}
 						totalGames={TOTAL_GAMES}
+						reveal={phase === "revealed"}
+						arrangements={result?.arrangements}
+						moneyDeltas={result?.moneyDeltas}
+						foul={result?.foul}
+						isLast={gameIndex + 1 >= TOTAL_GAMES}
+						onNext={nextGame}
 					/>
 					</div>
 					{phase === "betting" ? (
@@ -608,7 +613,7 @@ export default function PusoyTrese() {
 								onPlace={placeBet}
 							/>
 						</div>
-					) : (
+					) : phase === "revealed" ? null : (
 						<>
 							{/* Arrangement — floats in a bottom sheet over the
 							    table so the seats/opponents stay visible behind. */}
@@ -765,19 +770,6 @@ export default function PusoyTrese() {
 					) : null}
 				</DragOverlay>
 			</DndContext>
-
-			{phase === "revealed" && result && (
-				<ResultsPanel
-					result={result}
-					names={names}
-					balances={balances}
-					bankerSeat={banker}
-					humanSeat={humanSeat}
-					gameIndex={gameIndex}
-					totalGames={TOTAL_GAMES}
-					onNext={nextGame}
-				/>
-			)}
 		</div>
 	);
 }
