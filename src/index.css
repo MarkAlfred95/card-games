@@ -2,7 +2,7 @@
 
 /* Sizing is shared across themes; everything scales from --card-w. */
 :root {
-	--card-w: clamp(3.5rem, 1rem + 2.2vw, 5.25rem);
+	--card-w: clamp(3.15rem, 1rem + 2.2vw, 5.25rem);
 	--radius-card: 0.55rem;
 	overscroll-behavior-y: none;
 }
