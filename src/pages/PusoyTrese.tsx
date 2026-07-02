@@ -1,10 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-	LuChevronDown,
-	LuChevronUp,
-	LuArrowRight,
-	LuArmchair,
-} from "react-icons/lu";
+import { LuChevronUp, LuArrowRight, LuArmchair, LuX } from "react-icons/lu";
 import { FaCrown, FaTrophy } from "react-icons/fa6";
 import {
 	DndContext,
@@ -49,6 +44,7 @@ import {
 	MIN_CHIP,
 	COMEBACK_STAKE,
 } from "../components/game/pusoy-trese";
+import { TbHelp } from "react-icons/tb";
 
 interface Zones {
 	hand: CardModel[];
@@ -474,47 +470,47 @@ export default function PusoyTrese() {
 
 					<div className="p-4">
 						<div className="mx-auto mt-6 w-full max-w-xl rounded-2xl bg-black/25 p-6 ring-1 ring-white/10">
-						<h2 className="flex items-center gap-2 text-2xl font-bold">
-							{youWon ? (
-								<>
-									<FaTrophy className="h-6 w-6 text-amber-400" />
-									You finished on top!
-								</>
-							) : (
-								"Game over"
-							)}
-						</h2>
-						<p className="mt-1 text-sm opacity-70">
-							All {TOTAL_GAMES} games played. Final standings:
-						</p>
+							<h2 className="flex items-center gap-2 text-2xl font-bold">
+								{youWon ? (
+									<>
+										<FaTrophy className="h-6 w-6 text-amber-400" />
+										You finished on top!
+									</>
+								) : (
+									"Game over"
+								)}
+							</h2>
+							<p className="mt-1 text-sm opacity-70">
+								All {TOTAL_GAMES} games played. Final standings:
+							</p>
 
-						<div className="mt-4 space-y-2">
-							{ranking.map((r, i) => (
-								<div
-									key={r.seat}
-									className={`flex items-center justify-between rounded-lg px-4 py-2.5 ${
-										r.seat === humanSeat
-											? "bg-emerald-500/15 ring-1 ring-emerald-400/40"
-											: "bg-black/20"
-									}`}
-								>
-									<span className="font-semibold">
-										{i + 1}. {names[r.seat]}
-									</span>
-									<span className="font-bold tabular-nums">
-										{formatUSD(r.bal)}
-									</span>
-								</div>
-							))}
+							<div className="mt-4 space-y-2">
+								{ranking.map((r, i) => (
+									<div
+										key={r.seat}
+										className={`flex items-center justify-between rounded-lg px-4 py-2.5 ${
+											r.seat === humanSeat
+												? "bg-emerald-500/15 ring-1 ring-emerald-400/40"
+												: "bg-black/20"
+										}`}
+									>
+										<span className="font-semibold">
+											{i + 1}. {names[r.seat]}
+										</span>
+										<span className="font-bold tabular-nums">
+											{formatUSD(r.bal)}
+										</span>
+									</div>
+								))}
+							</div>
+
+							<button
+								onClick={playAgain}
+								className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300"
+							>
+								Play again <LuArrowRight className="h-4 w-4" />
+							</button>
 						</div>
-
-						<button
-							onClick={playAgain}
-							className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300"
-						>
-							Play again <LuArrowRight className="h-4 w-4" />
-						</button>
-					</div>
 					</div>
 				</div>
 			</div>
@@ -540,6 +536,40 @@ export default function PusoyTrese() {
 				tone: "bg-white/15",
 			};
 
+	// Per-row point chips for the reveal. Each row's margin is the head-to-head
+	// comparison (+ royalty difference) summed across that seat's opponents:
+	// the banker faces everyone, everyone else faces only the banker.
+	const rowScores =
+		phase === "revealed" && result
+			? result.evals.map((_, seat) => {
+					const opps =
+						seat === banker
+							? result.evals
+									.map((_, i) => i)
+									.filter((i) => i !== banker)
+							: [banker];
+					const margin = (pos: "front" | "middle" | "back") =>
+						opps.reduce(
+							(m, o) =>
+								m +
+								Math.sign(
+									compareHands(
+										result.evals[seat][pos],
+										result.evals[o][pos],
+									),
+								) +
+								(result.evals[seat].royalty[pos] -
+									result.evals[o].royalty[pos]),
+							0,
+						);
+					return {
+						front: margin("front"),
+						middle: margin("middle"),
+						back: margin("back"),
+					};
+				})
+			: undefined;
+
 	return (
 		<div className={shellClass} style={shellStyle}>
 			<DndContext
@@ -549,7 +579,7 @@ export default function PusoyTrese() {
 				onDragEnd={handleDragEnd}
 			>
 				<div
-					className="w-full flex min-h-dvh flex-col"
+					className="w-full flex min-h-dvh flex-col overflow-x-clip"
 					style={bgStyle}
 				>
 					<Header
@@ -564,44 +594,45 @@ export default function PusoyTrese() {
 
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
 						{/* Table-level notices */}
-					{phase !== "betting" && humanIsBanker && (
-						<div className="flex items-center gap-2 rounded-lg bg-amber-400/20 px-4 py-2 text-sm font-medium ring-1 ring-amber-400/40">
-							<FaCrown className="h-4 w-4 shrink-0 text-amber-400" />
-							<span>
-								You are the banker this game — you play every
-								other player at their stake.
-							</span>
-						</div>
-					)}
-					{phase !== "betting" &&
-						!humanIsBanker &&
-						wallet.balance < MIN_CHIP && (
-							<div className="rounded-lg bg-sky-400/20 px-4 py-2 text-sm font-medium ring-1 ring-sky-400/40">
-								💸 Out of money — you're auto-staked{" "}
-								{formatUSD(COMEBACK_STAKE)}/pt this game to win
-								some back.
+						{phase !== "betting" && humanIsBanker && (
+							<div className="flex items-center gap-2 rounded-lg bg-amber-400/20 px-4 py-2 text-sm font-medium ring-1 ring-amber-400/40">
+								<FaCrown className="h-4 w-4 shrink-0 text-amber-400" />
+								<span>
+									You are the banker this game — you play
+									every other player at their stake.
+								</span>
 							</div>
 						)}
-					{/* Oval felt table: seats around the rim, pot/round info
+						{phase !== "betting" &&
+							!humanIsBanker &&
+							wallet.balance < MIN_CHIP && (
+								<div className="rounded-lg bg-sky-400/20 px-4 py-2 text-sm font-medium ring-1 ring-sky-400/40">
+									💸 Out of money — you're auto-staked{" "}
+									{formatUSD(COMEBACK_STAKE)}/pt this game to
+									win some back.
+								</div>
+							)}
+						{/* Oval felt table: seats around the rim, pot/round info
 					    in the center. Stays as the calm background while the
 					    betting / arrange panels float over the bottom. */}
-					<PokerTable
-						names={names}
-						balances={balances}
-						stakes={stakes}
-						banker={banker}
-						humanSeat={humanSeat}
-						hands={hands}
-						back={back}
-						gameIndex={gameIndex}
-						totalGames={TOTAL_GAMES}
-						reveal={phase === "revealed"}
-						arrangements={result?.arrangements}
-						moneyDeltas={result?.moneyDeltas}
-						foul={result?.foul}
-						isLast={gameIndex + 1 >= TOTAL_GAMES}
-						onNext={nextGame}
-					/>
+						<PokerTable
+							names={names}
+							balances={balances}
+							stakes={stakes}
+							banker={banker}
+							humanSeat={humanSeat}
+							hands={hands}
+							back={back}
+							gameIndex={gameIndex}
+							totalGames={TOTAL_GAMES}
+							reveal={phase === "revealed"}
+							arrangements={result?.arrangements}
+							moneyDeltas={result?.moneyDeltas}
+							foul={result?.foul}
+							rowScores={rowScores}
+							isLast={gameIndex + 1 >= TOTAL_GAMES}
+							onNext={nextGame}
+						/>
 					</div>
 					{phase === "betting" ? (
 						<div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-2 sm:px-4 sm:pb-4">
@@ -627,43 +658,53 @@ export default function PusoyTrese() {
 										}}
 									>
 										{/* Sheet header: grab handle + collapse */}
-										<div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
-											<span className="text-sm font-semibold opacity-80">
-												Arrange your hand
-											</span>
-											<button
-												onClick={() =>
-													setArrangeOpen(false)
-												}
-												className="flex items-center gap-1.5 rounded-lg bg-black/25 px-3 py-1.5 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
+										<div className="flex flex-col gap-2 border-b border-white/10 p-4">
+											<div className="flex items-center justify-between">
+												<span className="font-semibold opacity-80">
+													Arrange your hand
+												</span>
+												<div className="flex items-center gap-1.5">
+													{/* Hand types reference */}
+													<button
+														onClick={() =>
+															setShowHandTypes(
+																(v) => !v,
+															)
+														}
+														aria-expanded={
+															showHandTypes
+														}
+														className="flex items-center rounded-lg bg-black/25 p-2 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
+													>
+														<TbHelp className="h-4 w-4" />
+													</button>
+													{showHandTypes && (
+														<HandTypes
+															open={showHandTypes}
+														/>
+													)}
+
+													<button
+														onClick={() =>
+															setArrangeOpen(
+																false,
+															)
+														}
+														className="flex items-center rounded-lg bg-black/25 p-2 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
+													>
+														<LuX className="h-4 w-4" />
+													</button>
+												</div>
+											</div>
+											{/* Status */}
+											<div
+												className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium backdrop-blur ${statusBar.tone}`}
 											>
-												<LuChevronDown className="h-4 w-4" />{" "}
-												Hide
-											</button>
+												{statusBar.text}
+											</div>
 										</div>
 
 										<div className="flex flex-col gap-4 overflow-y-auto p-4">
-											{/* Status + score action */}
-											<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-												<div
-													className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium backdrop-blur ${statusBar.tone}`}
-												>
-													{statusBar.text}
-												</div>
-												<button
-													onClick={handleScore}
-													disabled={
-														!status.complete ||
-														phase === "scoring"
-													}
-													className="w-full rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
-												>
-													{phase === "scoring"
-														? "Scoring…"
-														: "Score hand"}
-												</button>
-											</div>
-
 											{/* Arrangement zones: front (weakest) → back (strongest) */}
 											<div className="grid gap-3">
 												<DropZone
@@ -712,31 +753,22 @@ export default function PusoyTrese() {
 											</div>
 
 											{/* Staging hand */}
-											<HandZone cards={zones.hand} />
-
-											{/* Hand types reference */}
+											{/* <HandZone cards={zones.hand} /> */}
+										</div>
+										{/* Score Action */}
+										<div className="w-full flex gap-2 justify-end sm:gap-3 px-4 pt-3 pb-4 border-t border-white/10">
 											<button
-												onClick={() =>
-													setShowHandTypes((v) => !v)
+												onClick={handleScore}
+												disabled={
+													!status.complete ||
+													phase === "scoring"
 												}
-												aria-expanded={showHandTypes}
-												className="flex w-full items-center justify-center gap-2 rounded-lg bg-black/25 px-4 py-2.5 text-sm font-medium ring-1 ring-white/10 transition hover:bg-black/35"
+												className="w-full rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto cursor-pointer"
 											>
-												<LuChevronDown
-													className="h-4 w-4 transition-transform"
-													style={{
-														transform: showHandTypes
-															? "rotate(180deg)"
-															: "rotate(0deg)",
-													}}
-												/>
-												<span>Hand Types Guide</span>
+												{phase === "scoring"
+													? "Scoring…"
+													: "Score hand"}
 											</button>
-											{showHandTypes && (
-												<HandTypes
-													open={showHandTypes}
-												/>
-											)}
 										</div>
 									</div>
 								</div>
