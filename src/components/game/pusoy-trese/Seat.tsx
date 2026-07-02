@@ -45,8 +45,41 @@ function FlipCard({
 	);
 }
 
+// A small white chip showing a row's net point margin (reference-style). Popped
+// in via a CSS keyframe (not rAF) so it can't freeze in a throttled tab.
+function ScoreChip({
+	value,
+	delay,
+	side,
+}: {
+	value: number;
+	delay: number;
+	side: "left" | "right";
+}) {
+	return (
+		<span
+			style={{
+				animation: `popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}s both`,
+			}}
+			className={`absolute top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full bg-white text-[10px] font-extrabold tabular-nums shadow-md ring-1 ring-black/10 ${
+				side === "left" ? "right-full mr-1" : "left-full ml-1"
+			} ${
+				value > 0
+					? "text-emerald-600"
+					: value < 0
+						? "text-red-600"
+						: "text-slate-500"
+			}`}
+		>
+			{value > 0 ? `+${value}` : value}
+		</span>
+	);
+}
+
 // A fanned row of cards. In play it deals face-down cards in on mount; in reveal
-// mode it lays the real cards in place and flips each one over to show its face.
+// mode it lays the real cards in place, flips each one over, and (when scored)
+// shows a point chip to the right. In reveal the fan gets a fixed width so the
+// chips line up across the three rows.
 function FanRow({
 	cards,
 	maxRotation,
@@ -54,6 +87,8 @@ function FanRow({
 	baseDelay,
 	back,
 	reveal = false,
+	score,
+	chipSide = "right",
 	className = "",
 }: {
 	cards: CardModel[];
@@ -62,13 +97,20 @@ function FanRow({
 	baseDelay: number;
 	back: BackKey;
 	reveal?: boolean;
+	score?: number;
+	chipSide?: "left" | "right";
 	className?: string;
 }) {
 	const n = cards.length;
 	return (
 		<div
-			className={`flex ${className}`}
-			style={{ "--card-w": "3rem" } as CSSVars}
+			className={`relative flex justify-center ${className}`}
+			style={
+				{
+					"--card-w": "clamp(2.1rem, 6vw, 3rem)",
+					...(reveal ? { width: "calc(var(--card-w) * 2.9)" } : {}),
+				} as CSSVars
+			}
 		>
 			{cards.map((c, j) => {
 				const rotate =
@@ -117,6 +159,13 @@ function FanRow({
 					</motion.div>
 				);
 			})}
+			{reveal && score !== undefined && (
+				<ScoreChip
+					value={score}
+					delay={baseDelay + 0.8}
+					side={chipSide}
+				/>
+			)}
 		</div>
 	);
 }
@@ -136,6 +185,8 @@ export default function Seat({
 	arrangement,
 	money = 0,
 	foul = false,
+	rowScore,
+	chipSide = "right",
 }: {
 	name: string;
 	balance: number;
@@ -148,12 +199,16 @@ export default function Seat({
 	arrangement?: Arrangement;
 	money?: number;
 	foul?: boolean;
+	rowScore?: { front: number; middle: number; back: number };
+	chipSide?: "left" | "right";
 }) {
 	// In reveal mode use the real arrangement rows; otherwise a decorative fan.
 	const front = reveal && arrangement ? arrangement.front : hand?.slice(0, 3);
 	const middle = reveal && arrangement ? arrangement.middle : hand?.slice(0, 5);
 	const backRow = reveal && arrangement ? arrangement.back : hand?.slice(0, 5);
 	const showCards = Boolean(front && middle && backRow);
+	// Per-row point chips: only for a clean (non-fouled) revealed hand.
+	const scores = reveal && !foul ? rowScore : undefined;
 
 	return (
 		<div className="flex flex-col items-center gap-1.5">
@@ -165,6 +220,8 @@ export default function Seat({
 						baseDelay={0}
 						back={back}
 						reveal={reveal}
+						score={scores?.front}
+						chipSide={chipSide}
 						marginTop={(j) => (j === 0 || j === 2 ? "-2px" : 0)}
 					/>
 					<FanRow
@@ -173,7 +230,9 @@ export default function Seat({
 						baseDelay={reveal ? 0.25 : 0.14}
 						back={back}
 						reveal={reveal}
-						className="-mt-7"
+						score={scores?.middle}
+						chipSide={chipSide}
+						className="mt-[calc(var(--card-w)*-0.58)]"
 						marginTop={(j) =>
 							j === 0 || j === 2 || j === 4 ? "2px" : 0
 						}
@@ -184,7 +243,9 @@ export default function Seat({
 						baseDelay={reveal ? 0.5 : 0.36}
 						back={back}
 						reveal={reveal}
-						className="-mt-7"
+						score={scores?.back}
+						chipSide={chipSide}
+						className="mt-[calc(var(--card-w)*-0.58)]"
 						marginTop={(j) =>
 							j === 0 || j === 2 || j === 4 ? "2px" : 0
 						}

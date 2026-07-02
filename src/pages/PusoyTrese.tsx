@@ -540,6 +540,40 @@ export default function PusoyTrese() {
 				tone: "bg-white/15",
 			};
 
+	// Per-row point chips for the reveal. Each row's margin is the head-to-head
+	// comparison (+ royalty difference) summed across that seat's opponents:
+	// the banker faces everyone, everyone else faces only the banker.
+	const rowScores =
+		phase === "revealed" && result
+			? result.evals.map((_, seat) => {
+					const opps =
+						seat === banker
+							? result.evals
+									.map((_, i) => i)
+									.filter((i) => i !== banker)
+							: [banker];
+					const margin = (pos: "front" | "middle" | "back") =>
+						opps.reduce(
+							(m, o) =>
+								m +
+								Math.sign(
+									compareHands(
+										result.evals[seat][pos],
+										result.evals[o][pos],
+									),
+								) +
+								(result.evals[seat].royalty[pos] -
+									result.evals[o].royalty[pos]),
+							0,
+						);
+					return {
+						front: margin("front"),
+						middle: margin("middle"),
+						back: margin("back"),
+					};
+				})
+			: undefined;
+
 	return (
 		<div className={shellClass} style={shellStyle}>
 			<DndContext
@@ -549,7 +583,7 @@ export default function PusoyTrese() {
 				onDragEnd={handleDragEnd}
 			>
 				<div
-					className="w-full flex min-h-dvh flex-col"
+					className="w-full flex min-h-dvh flex-col overflow-x-clip"
 					style={bgStyle}
 				>
 					<Header
@@ -599,6 +633,7 @@ export default function PusoyTrese() {
 						arrangements={result?.arrangements}
 						moneyDeltas={result?.moneyDeltas}
 						foul={result?.foul}
+						rowScores={rowScores}
 						isLast={gameIndex + 1 >= TOTAL_GAMES}
 						onNext={nextGame}
 					/>

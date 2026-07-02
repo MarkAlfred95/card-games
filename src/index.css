@@ -115,3 +115,10 @@ body {
   from { opacity: 0; transform: scale(0.6); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/* Delayed pop-in for the reveal "Next game" control. CSS-driven (not rAF) so
+   it still completes in throttled/background tabs. */
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
