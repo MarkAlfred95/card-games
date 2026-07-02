@@ -37,7 +37,6 @@ import {
 	Header,
 	PokerTable,
 	BettingGate,
-	HandZone,
 	SEATS,
 	GAMES_PER_BANKER,
 	TOTAL_GAMES,
