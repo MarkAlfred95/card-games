@@ -61,7 +61,7 @@ export default function DropZone({
 				{Array.from({ length: empties }).map((_, i) => (
 					<div
 						key={`empty-${i}`}
-						className="aspect-[5/7] rounded-[var(--radius-card)] border-2 border-dashed border-white/25 bg-[var(--zone-empty)]"
+						className="aspect-5/7 rounded-(--radius-card) border-2 border-dashed border-white/25 bg-(--zone-empty)"
 						style={{ width: "var(--card-w)" }}
 					/>
 				))}

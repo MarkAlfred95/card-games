@@ -2,7 +2,7 @@
 
 /* Sizing is shared across themes; everything scales from --card-w. */
 :root {
-	--card-w: clamp(2.8rem, 1rem + 2.2vw, 5.25rem);
+	--card-w: clamp(3.5rem, 1rem + 2.2vw, 5.25rem);
 	--radius-card: 0.55rem;
 	overscroll-behavior-y: none;
 }
@@ -80,38 +80,71 @@ body {
 /* ── Poker animations ─────────────────────────────────────────────────── */
 
 @keyframes dealCard {
-  from {
-    opacity: 0;
-    transform: translateY(-48px) scale(0.75) rotate(-10deg);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1) rotate(0deg);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(-48px) scale(0.75) rotate(-10deg);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1) rotate(0deg);
+	}
 }
 
 @keyframes communityReveal {
-  from {
-    opacity: 0;
-    transform: translateY(18px) rotateY(90deg);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) rotateY(0deg);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(18px) rotateY(90deg);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) rotateY(0deg);
+	}
 }
 
 @keyframes chipFloat {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-5px); }
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-5px);
+	}
 }
 
 @keyframes winnerPulse {
-  0%, 100% { box-shadow: 0 0 12px #facc15, 0 0 28px #facc1566; }
-  50%       { box-shadow: 0 0 24px #facc15, 0 0 56px #facc1599; }
+	0%,
+	100% {
+		box-shadow:
+			0 0 12px #facc15,
+			0 0 28px #facc1566;
+	}
+	50% {
+		box-shadow:
+			0 0 24px #facc15,
+			0 0 56px #facc1599;
+	}
 }
 
 @keyframes actionBadgePop {
-  from { opacity: 0; transform: scale(0.6); }
-  to   { opacity: 1; transform: scale(1); }
+	from {
+		opacity: 0;
+		transform: scale(0.6);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* Delayed pop-in for the reveal "Next game" control. CSS-driven (not rAF) so
+   it still completes in throttled/background tabs. */
+@keyframes popIn {
+	from {
+		opacity: 0;
+		transform: scale(0.4);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
