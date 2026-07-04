@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { LuArrowLeft } from "react-icons/lu";
 import { formatUSD } from "../../../wallet";
+import { THEMES } from "../../../themes";
 import type { ThemeKey } from "../../../themes";
 import type { BackKey } from "../../../cardbacks";
 import SettingsMenu from "./SettingsMenu";
@@ -50,7 +51,7 @@ export default function Header({
 							{formatUSD(balance)}
 						</b>
 					</div>
-					<SettingsMenu>
+					<SettingsMenu themeClass={THEMES[theme].className}>
 						<Picker
 							label="Theme"
 							options={themeOptions}

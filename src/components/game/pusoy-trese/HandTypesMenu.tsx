@@ -1,41 +1,43 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
-import { LuSettings } from "react-icons/lu";
+import { TbHelp } from "react-icons/tb";
+import HandTypes from "../../HandTypes";
 
-// Distance (px) between the trigger button and the dropdown, matching mt-2.
+// Distance (px) below the trigger, and the min gap kept to the viewport edges.
 const GAP = 8;
+const MARGIN = 8;
 
-// Dropdown that holds the cosmetic Pickers. Closes on outside-click / Escape.
-// The panel is rendered into a portal on document.body and positioned with
-// fixed coordinates anchored to the trigger, so it floats above the poker table
-// (which otherwise traps it in a lower stacking context).
-export default function SettingsMenu({
-	children,
-	themeClass,
-}: {
-	children: ReactNode;
-	// Theme class carried onto the portal so the panel's CSS variables
-	// (--table-felt-2 / --ui-text) resolve outside the themed page subtree.
-	themeClass?: string;
-}) {
+// Hand-types reference popover. Like SettingsMenu, the panel is portaled onto
+// document.body and positioned with fixed coordinates anchored to the trigger,
+// so it floats above the poker table / arrange sheet instead of being trapped in
+// their stacking context. The panel is tall, so its position is clamped to the
+// viewport (it scrolls internally past that).
+export default function HandTypesMenu({ themeClass }: { themeClass?: string }) {
 	const [open, setOpen] = useState(false);
-	const [pos, setPos] = useState({ top: 0, right: 0 });
+	const [pos, setPos] = useState({ top: 0, left: 0 });
 	const buttonRef = useRef<HTMLButtonElement>(null);
 	const menuRef = useRef<HTMLDivElement>(null);
 
-	// Position the panel below the button, right edges aligned.
+	// Anchor the panel to the button's bottom-right, clamped inside the viewport.
 	useLayoutEffect(() => {
 		if (!open) return;
 		function place() {
 			const btn = buttonRef.current;
-			if (!btn) return;
+			const panel = menuRef.current;
+			if (!btn || !panel) return;
 			const rect = btn.getBoundingClientRect();
-			setPos({
-				top: rect.bottom + GAP,
-				right: window.innerWidth - rect.right,
-			});
+			const w = panel.offsetWidth;
+			const h = panel.offsetHeight;
+			const left = Math.min(
+				Math.max(MARGIN, rect.right - w),
+				window.innerWidth - w - MARGIN,
+			);
+			const top =
+				rect.bottom + GAP + h > window.innerHeight - MARGIN
+					? Math.max(MARGIN, window.innerHeight - MARGIN - h)
+					: rect.bottom + GAP;
+			setPos({ top, left });
 		}
 		place();
 		window.addEventListener("resize", place);
@@ -75,15 +77,12 @@ export default function SettingsMenu({
 				onClick={() => setOpen((v) => !v)}
 				aria-haspopup="true"
 				aria-expanded={open}
-				title="Settings"
-				className={`flex items-center gap-2 rounded-xl bg-black/30 px-3 py-2 text-sm font-medium transition border cursor-pointer border-white/20 ${
-					open
-						? "bg-white/90 text-slate-900"
-						: "bg-black/30 text-white/80 hover:bg-black/40"
+				title="Hand types"
+				className={`flex items-center rounded-lg p-2 text-xs font-medium ring-1 ring-white/10 transition ${
+					open ? "bg-black/40" : "bg-black/25 hover:bg-black/35"
 				}`}
 			>
-				<LuSettings className="h-5 w-5" aria-hidden="true" />
-				<span className="hidden sm:block">Settings</span>
+				<TbHelp className="h-4 w-4" />
 			</button>
 			{createPortal(
 				<AnimatePresence>
@@ -94,18 +93,14 @@ export default function SettingsMenu({
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -8 }}
 							transition={{ duration: 0.15, ease: "easeOut" }}
-							className={`fixed z-999 flex flex-col gap-4 rounded-xl border p-4 shadow-xl backdrop-blur ${themeClass ?? ""}`}
+							className={`fixed z-999 shadow-xl ${themeClass ?? ""}`}
 							style={{
 								top: pos.top,
-								right: pos.right,
-								backgroundColor:
-									"color-mix(in srgb, var(--table-felt-2) 92%, black)",
-								borderColor:
-									"color-mix(in srgb, var(--ui-text) 18%, transparent)",
-								color: "var(--ui-text)",
+								left: pos.left,
+								width: "min(25rem, calc(100vw - 16px))",
 							}}
 						>
-							{children}
+							<HandTypes open />
 						</motion.div>
 					)}
 				</AnimatePresence>,

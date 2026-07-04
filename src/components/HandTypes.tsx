@@ -7,12 +7,15 @@ interface HandTypesProps {
 function HandTypes({ open = true }: HandTypesProps) {
 	return (
 		<div
-			className={`w-full max-w-full lg:w-100 max-h-[75.5dvh] flex flex-col overflow-hidden shrink-0 rounded-lg bg-black/25 text-sm ring-1 ring-white/10 ${
+			className={`w-full max-w-full lg:w-100 max-h-[75.5dvh] flex flex-col overflow-hidden shrink-0 rounded-lg text-sm ring-1 ring-white/10 backdrop-blur ${
 				!open ? "max-lg:hidden" : ""
 			}`}
 			style={
 				{
 					"--card-w": "clamp(2.8rem, 1rem + 2.2vw, 5.25rem)",
+					backgroundColor:
+						"color-mix(in srgb, var(--table-felt-2) 92%, black)",
+					color: "var(--ui-text)",
 				} as React.CSSProperties & Record<string, string>
 			}
 		>

@@ -32,18 +32,17 @@ import { BACKS, BACK_KEYS } from "../cardbacks";
 import type { BackKey } from "../cardbacks";
 import type { CSSVars } from "../styleVars";
 import { useWallet, formatUSD } from "../wallet";
-import HandTypes from "../components/HandTypes";
 import {
 	Header,
 	PokerTable,
 	BettingGate,
+	HandTypesMenu,
 	SEATS,
 	GAMES_PER_BANKER,
 	TOTAL_GAMES,
 	MIN_CHIP,
 	COMEBACK_STAKE,
 } from "../components/game/pusoy-trese";
-import { TbHelp } from "react-icons/tb";
 
 interface Zones {
 	hand: CardModel[];
@@ -147,7 +146,6 @@ export default function PusoyTrese() {
 	const [humanStake, setHumanStake] = useState<number>(0);
 	const [activeCard, setActiveCard] = useState<CardModel | null>(null);
 	const [result, setResult] = useState<ResultData | null>(null);
-	const [showHandTypes, setShowHandTypes] = useState(false);
 	const [arrangeOpen, setArrangeOpen] = useState(true);
 
 	const { zones, hands } = round;
@@ -664,24 +662,12 @@ export default function PusoyTrese() {
 												</span>
 												<div className="flex items-center gap-1.5">
 													{/* Hand types reference */}
-													<button
-														onClick={() =>
-															setShowHandTypes(
-																(v) => !v,
-															)
+													<HandTypesMenu
+														themeClass={
+															THEMES[theme]
+																.className
 														}
-														aria-expanded={
-															showHandTypes
-														}
-														className="flex items-center rounded-lg bg-black/25 p-2 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
-													>
-														<TbHelp className="h-4 w-4" />
-													</button>
-													{showHandTypes && (
-														<HandTypes
-															open={showHandTypes}
-														/>
-													)}
+													/>
 
 													<button
 														onClick={() =>
