@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { LuChevronUp, LuArrowRight, LuArmchair, LuX } from "react-icons/lu";
 import { FaCrown, FaTrophy } from "react-icons/fa6";
 import {
@@ -388,10 +389,11 @@ export default function PusoyTrese() {
 		return (
 			<div className={shellClass} style={shellStyle}>
 				<div
-					className="w-full flex min-h-screen flex-col"
+					className="relative w-full flex min-h-screen flex-col overflow-hidden"
 					style={bgStyle}
 				>
-					<div className="mx-auto w-full flex flex-col gap-6">
+					<AmbientGlow />
+					<div className="relative mx-auto w-full flex flex-col gap-6">
 						<Header
 							theme={theme}
 							setTheme={setTheme}
@@ -402,13 +404,18 @@ export default function PusoyTrese() {
 							balance={wallet.balance}
 						/>
 						<div className="p-4">
-							<div className="mx-auto mt-6 w-full max-w-2xl rounded-2xl bg-black/35 p-6 ring-1 ring-white/10">
+							<motion.div
+								initial={{ opacity: 0, y: 24 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.45, ease: "easeOut" }}
+								className="mx-auto mt-6 w-full max-w-2xl rounded-2xl border border-white/10 bg-black/35 p-6 shadow-2xl shadow-black/30 backdrop-blur"
+							>
 								<div className="flex gap-3 items-center">
 									<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black/20 ring-1 ring-white/10">
 										<LuArmchair className="h-8 w-8 text-amber-300" />
 									</div>
 									<div className="flex flex-col">
-										<h2 className="text-xl font-semibold">
+										<h2 className="font-display text-2xl font-semibold tracking-tight">
 											Choose your seat
 										</h2>
 										<p className="mt-1 text-sm opacity-70 leading-tight">
@@ -450,7 +457,7 @@ export default function PusoyTrese() {
 														setDivision(d)
 													}
 													disabled={locked}
-													className={`rounded-lg p-3 text-left ring-2 transition ${
+													className={`rounded-xl p-3 text-left ring-2 transition ${
 														active
 															? "bg-amber-400/15 ring-amber-400/60"
 															: locked
@@ -503,7 +510,7 @@ export default function PusoyTrese() {
 											<button
 												key={s}
 												onClick={() => beginMatch(s)}
-												className="group rounded-lg bg-white/5 p-4 text-left ring-2 ring-white/25 transition hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
+												className="group rounded-xl bg-white/5 p-4 text-left ring-2 ring-white/25 transition hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
 											>
 												<div className="flex items-center justify-between">
 													<span className="text-base font-bold">
@@ -544,7 +551,7 @@ export default function PusoyTrese() {
 										Reset wallet to {formatUSD(1000)}
 									</button>
 								)}
-							</div>
+							</motion.div>
 						</div>
 					</div>
 				</div>
@@ -563,9 +570,10 @@ export default function PusoyTrese() {
 		return (
 			<div className={shellClass} style={shellStyle}>
 				<div
-					className="w-full flex min-h-screen flex-col gap-6"
+					className="relative w-full flex min-h-screen flex-col gap-6 overflow-hidden"
 					style={bgStyle}
 				>
+					<AmbientGlow />
 					<Header
 						theme={theme}
 						setTheme={setTheme}
@@ -577,9 +585,14 @@ export default function PusoyTrese() {
 						division={formatCompactUSD(division.unit)}
 					/>
 
-					<div className="p-4">
-						<div className="mx-auto mt-6 w-full max-w-xl rounded-2xl bg-black/25 p-6 ring-1 ring-white/10">
-							<h2 className="flex items-center gap-2 text-2xl font-bold">
+					<div className="relative p-4">
+						<motion.div
+							initial={{ opacity: 0, y: 24 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.45, ease: "easeOut" }}
+							className="mx-auto mt-6 w-full max-w-xl rounded-2xl border border-white/10 bg-black/25 p-6 shadow-2xl shadow-black/30 backdrop-blur"
+						>
+							<h2 className="font-display flex items-center gap-2 text-3xl font-semibold tracking-tight">
 								{youWon ? (
 									<>
 										<FaTrophy className="h-6 w-6 text-amber-400" />
@@ -615,11 +628,11 @@ export default function PusoyTrese() {
 
 							<button
 								onClick={playAgain}
-								className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300"
+								className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110"
 							>
 								Play again <LuArrowRight className="h-4 w-4" />
 							</button>
-						</div>
+						</motion.div>
 					</div>
 				</div>
 			</div>
@@ -771,7 +784,7 @@ export default function PusoyTrese() {
 										{/* Sheet header: grab handle + collapse */}
 										<div className="flex flex-col gap-2 border-b border-white/10 p-4">
 											<div className="flex items-center justify-between">
-												<span className="font-semibold opacity-80">
+												<span className="font-display text-lg font-semibold tracking-tight opacity-90">
 													Arrange your hand
 												</span>
 												<div className="flex items-center gap-1.5">
@@ -862,7 +875,7 @@ export default function PusoyTrese() {
 													!status.complete ||
 													phase === "scoring"
 												}
-												className="w-full rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto cursor-pointer"
+												className="w-full rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100 sm:w-auto cursor-pointer"
 											>
 												{phase === "scoring"
 													? "Scoring…"
@@ -901,6 +914,17 @@ export default function PusoyTrese() {
 					) : null}
 				</DragOverlay>
 			</DndContext>
+		</div>
+	);
+}
+
+// Soft ambient glows matching the home page; neutral tints so they sit well on
+// any felt theme.
+function AmbientGlow() {
+	return (
+		<div aria-hidden className="pointer-events-none absolute inset-0">
+			<div className="absolute -top-40 left-1/2 h-[30rem] w-[50rem] -translate-x-1/2 rounded-full bg-white/[0.06] blur-3xl" />
+			<div className="absolute -bottom-48 -right-32 h-[24rem] w-[34rem] rounded-full bg-amber-400/[0.06] blur-3xl" />
 		</div>
 	);
 }
