@@ -31,7 +31,9 @@ export default function BettingGate({
 					"color-mix(in srgb, var(--table-felt-2) 94%, black)",
 			}}
 		>
-			<h2 className="text-lg font-semibold">Place your stake</h2>
+			<h2 className="font-display text-xl font-semibold tracking-tight">
+				Place your stake
+			</h2>
 			<p className="mt-1 text-sm opacity-70">
 				<FaCrown className="mr-1 inline h-3.5 w-3.5 -translate-y-px text-amber-400" />
 				{banker} is the banker. Pick chips for your per-point stake —
@@ -49,7 +51,7 @@ export default function BettingGate({
 			<button
 				onClick={onPlace}
 				disabled={stake < minChip}
-				className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
+				className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100"
 			>
 				{stake < minChip ? (
 					"Add at least one chip"

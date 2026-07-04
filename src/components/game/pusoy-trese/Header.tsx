@@ -41,7 +41,7 @@ export default function Header({
 						<LuArrowLeft className="h-5 w-5" />{" "}
 						<span className="hidden sm:block">Games</span>
 					</Link>
-					<h1 className="text-xl font-semibold tracking-tight">
+					<h1 className="font-display text-2xl font-semibold tracking-tight">
 						Pusoy Trese
 					</h1>
 					{division && (
@@ -54,8 +54,9 @@ export default function Header({
 					)}
 				</div>
 				<div className="ml-auto flex items-center gap-3">
-					<div className="rounded-md hidden sm:block bg-black/25 px-4 p-2 text-sm">
-						<span className="opacity-60">Balance</span>{" "}
+					<div className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm backdrop-blur">
+						<span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+						<span className="opacity-60">Balance</span>
 						<b
 							className={`tabular-nums ${balance < 0 ? "text-red-300" : "text-emerald-300"}`}
 						>
