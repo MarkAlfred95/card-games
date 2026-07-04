@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LuChevronUp, LuArrowRight, LuArmchair, LuX } from "react-icons/lu";
 import { FaCrown, FaTrophy } from "react-icons/fa6";
 import {
@@ -31,7 +31,9 @@ import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
 import type { BackKey } from "../cardbacks";
 import type { CSSVars } from "../styleVars";
-import { useWallet, formatUSD } from "../wallet";
+import { useWallet, formatUSD, formatCompactUSD } from "../wallet";
+import { DIVISIONS, divisionFor, divisionsUpTo } from "../divisions";
+import type { Division } from "../divisions";
 import {
 	Header,
 	PokerTable,
@@ -100,17 +102,22 @@ function sortHand(cards: CardModel[]): CardModel[] {
 const bankerOf = (gameIndex: number) =>
 	Math.floor(gameIndex / GAMES_PER_BANKER);
 
-// Random starting bankroll for a bot: $500–$2500 in $50 steps.
-function botBalance(): number {
-	return 500 + Math.round(Math.random() * 40) * 50;
+// Random starting bankroll for a bot: $500–$2500 in $50 steps, scaled to the
+// spending division's factor.
+function botBalance(factor: number): number {
+	return (500 + Math.round(Math.random() * 40) * 50) * factor;
 }
 
-// A bot picks a per-point stake it can afford. If it's out of money, it gets the
-// comeback stake so it can still win some back.
-function botStake(balance: number): number {
-	if (balance < MIN_CHIP) return COMEBACK_STAKE;
-	const denoms = [5, 10, 50, 100].filter((d) => d <= balance);
-	return denoms[Math.floor(Math.random() * denoms.length)];
+// A bot's per-point stake scales with its bankroll (and therefore the division):
+// a random 10–20% slice of its balance, snapped to the division's smallest chip
+// so it never looks trivial beside the division's pots. A broke bot falls back to
+// the comeback stake so it can still win some back.
+function botStake(balance: number, factor: number): number {
+	const minChip = MIN_CHIP * factor;
+	if (balance < minChip) return COMEBACK_STAKE * factor;
+	const target = balance * (0.1 + Math.random() * 0.1); // 10–20% of bankroll
+	const stake = Math.round(target / minChip) * minChip; // snap to chip step
+	return Math.min(Math.max(stake, minChip), balance);
 }
 
 // Deal a fresh round. The human seat's 13 cards start randomly spread across the
@@ -147,6 +154,21 @@ export default function PusoyTrese() {
 	const [activeCard, setActiveCard] = useState<CardModel | null>(null);
 	const [result, setResult] = useState<ResultData | null>(null);
 	const [arrangeOpen, setArrangeOpen] = useState(true);
+
+	// Chosen spending division. Locked for the duration of a match; on the setup
+	// screen the player can switch to any division they can afford.
+	const [division, setDivision] = useState<Division>(() =>
+		divisionFor(wallet.balance),
+	);
+	const factor = division.factor;
+
+	// While in the lobby, drop the selection back to the natural division if the
+	// balance can no longer afford the one that was picked. Guarded to `setup` so
+	// a mid-match balance swing never changes the locked division.
+	useEffect(() => {
+		if (phase === "setup" && wallet.balance < division.min)
+			setDivision(divisionFor(wallet.balance));
+	}, [phase, wallet.balance, division.min]);
 
 	const { zones, hands } = round;
 	const banker = bankerOf(gameIndex);
@@ -197,7 +219,7 @@ export default function PusoyTrese() {
 
 	function beginMatch(seat: number) {
 		const bb = Array.from({ length: SEATS }, (_, s) =>
-			s === seat ? 0 : botBalance(),
+			s === seat ? 0 : botBalance(factor),
 		);
 		setBotBalances(bb);
 		setHumanSeat(seat);
@@ -209,11 +231,11 @@ export default function PusoyTrese() {
 	function enterRound(gi: number, seat: number, bb: number[]) {
 		const bnk = bankerOf(gi);
 		const r = dealRound(seat);
-		const humanBroke = wallet.balance < MIN_CHIP;
+		const humanBroke = wallet.balance < MIN_CHIP * factor;
 		const st = Array.from({ length: SEATS }, (_, s) => {
 			if (s === bnk) return 0;
-			if (s === seat) return humanBroke ? COMEBACK_STAKE : 0; // filled at bet time unless broke
-			return botStake(bb[s]);
+			if (s === seat) return humanBroke ? COMEBACK_STAKE * factor : 0; // filled at bet time unless broke
+			return botStake(bb[s], factor);
 		});
 		setRound(r);
 		setStakes(st);
@@ -348,6 +370,21 @@ export default function PusoyTrese() {
 	// --- Setup screen ---------------------------------------------------------
 
 	if (phase === "setup") {
+		// Show every affordable division plus the next locked one, to tease
+		// progression. Locked entries are disabled.
+		const affordable = divisionsUpTo(wallet.balance);
+		const shownDivisions = DIVISIONS.slice(
+			0,
+			Math.min(affordable.length + 1, DIVISIONS.length),
+		);
+		const divisionRange = (d: Division) => {
+			if (d.level === 0) return `Under ${formatCompactUSD(10000)}`;
+			const next = DIVISIONS[d.level + 1];
+			return next
+				? `${formatCompactUSD(d.min)} – ${formatCompactUSD(next.min)}`
+				: `${formatCompactUSD(d.min)}+`;
+		};
+
 		return (
 			<div className={shellClass} style={shellStyle}>
 				<div
@@ -384,7 +421,81 @@ export default function PusoyTrese() {
 									</div>
 								</div>
 
-								<div className="mt-5 flex flex-col sm:grid sm:grid-cols-2 gap-4">
+								{/* Spending division selector */}
+								<div className="mt-6">
+									<div className="flex items-baseline justify-between gap-2">
+										<h3 className="text-sm font-semibold uppercase tracking-wide opacity-80">
+											Spending division
+										</h3>
+										<span className="text-xs opacity-60">
+											Stakes ×{factor} ·{" "}
+											{formatCompactUSD(division.unit)}
+										</span>
+									</div>
+									<p className="mt-1 text-xs opacity-60 leading-tight">
+										Play at your level or drop to a lower one.
+										Reach the next tier's balance to unlock it.
+									</p>
+									<div className="mt-3 flex flex-col sm:grid sm:grid-cols-2 gap-3">
+										{shownDivisions.map((d) => {
+											const locked =
+												wallet.balance < d.min;
+											const active =
+												d.level === division.level;
+											return (
+												<button
+													key={d.level}
+													onClick={() =>
+														!locked &&
+														setDivision(d)
+													}
+													disabled={locked}
+													className={`rounded-lg p-3 text-left ring-2 transition ${
+														active
+															? "bg-amber-400/15 ring-amber-400/60"
+															: locked
+																? "cursor-not-allowed bg-white/[0.03] opacity-50 ring-white/10"
+																: "bg-white/5 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
+													}`}
+												>
+													<div className="flex items-center justify-between gap-2">
+														<span className="text-sm font-bold">
+															{formatCompactUSD(
+																d.unit,
+															)}{" "}
+															· {d.name}
+														</span>
+														{active ? (
+															<span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-900">
+																Selected
+															</span>
+														) : locked ? (
+															<span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide opacity-80">
+																Reach{" "}
+																{formatCompactUSD(
+																	d.min,
+																)}
+															</span>
+														) : null}
+													</div>
+													<p className="mt-1 text-xs opacity-70">
+														{divisionRange(d)} ·
+														chips{" "}
+														{formatCompactUSD(
+															5 * d.factor,
+														)}
+														–
+														{formatCompactUSD(
+															1000 * d.factor,
+														)}
+													</p>
+												</button>
+											);
+										})}
+									</div>
+								</div>
+
+								<div className="mt-6 flex flex-col sm:grid sm:grid-cols-2 gap-4">
 									{Array.from({ length: SEATS }, (_, s) => {
 										const lo = s * GAMES_PER_BANKER + 1;
 										const hi = lo + GAMES_PER_BANKER - 1;
@@ -463,6 +574,7 @@ export default function PusoyTrese() {
 						themeOptions={themeOptions}
 						backOptions={backOptions}
 						balance={wallet.balance}
+						division={formatCompactUSD(division.unit)}
 					/>
 
 					<div className="p-4">
@@ -587,6 +699,7 @@ export default function PusoyTrese() {
 						themeOptions={themeOptions}
 						backOptions={backOptions}
 						balance={wallet.balance}
+						division={formatCompactUSD(division.unit)}
 					/>
 
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
@@ -602,11 +715,11 @@ export default function PusoyTrese() {
 						)}
 						{phase !== "betting" &&
 							!humanIsBanker &&
-							wallet.balance < MIN_CHIP && (
+							wallet.balance < MIN_CHIP * factor && (
 								<div className="rounded-lg bg-sky-400/20 px-4 py-2 text-sm font-medium ring-1 ring-sky-400/40">
 									💸 Out of money — you're auto-staked{" "}
-									{formatUSD(COMEBACK_STAKE)}/pt this game to
-									win some back.
+									{formatUSD(COMEBACK_STAKE * factor)}/pt this
+									game to win some back.
 								</div>
 							)}
 						{/* Oval felt table: seats around the rim, pot/round info
@@ -639,6 +752,7 @@ export default function PusoyTrese() {
 								stake={humanStake}
 								setStake={setHumanStake}
 								onPlace={placeBet}
+								factor={factor}
 							/>
 						</div>
 					) : phase === "revealed" ? null : (

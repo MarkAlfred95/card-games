@@ -67,3 +67,13 @@ export const formatUSD = (n: number) => usd.format(n)
 // Signed format for deltas, e.g. +60 -> "+$60", -45 -> "-$45".
 export const formatDelta = (n: number) =>
   n > 0 ? `+${usd.format(n)}` : usd.format(n)
+
+// Compact USD for tight spaces, e.g. 1000 -> "$1K", 100000 -> "$100K",
+// 5_000_000 -> "$5M". Drops trailing ".0" (10000 -> "$10K", not "$10.0K").
+export const formatCompactUSD = (n: number) => {
+  const compact = (v: number, suffix: string) =>
+    `$${Number((n / v).toFixed(1))}${suffix}`
+  if (Math.abs(n) >= 1_000_000) return compact(1_000_000, 'M')
+  if (Math.abs(n) >= 1_000) return compact(1_000, 'K')
+  return `$${n}`
+}
