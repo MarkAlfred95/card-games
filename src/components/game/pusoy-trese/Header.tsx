@@ -15,6 +15,8 @@ interface HeaderProps {
 	themeOptions: [ThemeKey, string][];
 	backOptions: [BackKey, string][];
 	balance: number;
+	// Active spending division label, e.g. "$10K" — shown as a badge when set.
+	division?: string;
 }
 
 export default function Header({
@@ -25,6 +27,7 @@ export default function Header({
 	themeOptions,
 	backOptions,
 	balance,
+	division,
 }: HeaderProps) {
 	return (
 		<header className="w-full flex flex-wrap items-center justify-center gap-x-8 gap-y-4 bg-black/35 px-4 sm:px-6 py-4 backdrop-blur">
@@ -41,6 +44,14 @@ export default function Header({
 					<h1 className="text-xl font-semibold tracking-tight">
 						Pusoy Trese
 					</h1>
+					{division && (
+						<span
+							className="rounded-full bg-amber-400/20 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/40"
+							title="Spending division"
+						>
+							{division}
+						</span>
+					)}
 				</div>
 				<div className="ml-auto flex items-center gap-3">
 					<div className="rounded-md hidden sm:block bg-black/25 px-4 p-2 text-sm">

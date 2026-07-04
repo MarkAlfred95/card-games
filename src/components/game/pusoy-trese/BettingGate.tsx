@@ -10,6 +10,8 @@ interface BettingGateProps {
 	stake: number;
 	setStake: (v: number) => void;
 	onPlace: () => void;
+	// Spending-division multiplier applied to the chip denominations.
+	factor?: number;
 }
 
 export default function BettingGate({
@@ -18,7 +20,9 @@ export default function BettingGate({
 	stake,
 	setStake,
 	onPlace,
+	factor = 1,
 }: BettingGateProps) {
+	const minChip = MIN_CHIP * factor;
 	return (
 		<div
 			className="mx-auto w-full max-w-md rounded-2xl p-5 shadow-2xl ring-1 ring-white/15"
@@ -35,14 +39,19 @@ export default function BettingGate({
 				banker by.
 			</p>
 			<div className="mt-4">
-				<ChipTray balance={balance} value={stake} onChange={setStake} />
+				<ChipTray
+					balance={balance}
+					value={stake}
+					onChange={setStake}
+					factor={factor}
+				/>
 			</div>
 			<button
 				onClick={onPlace}
-				disabled={stake < MIN_CHIP}
+				disabled={stake < minChip}
 				className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
 			>
-				{stake < MIN_CHIP ? (
+				{stake < minChip ? (
 					"Add at least one chip"
 				) : (
 					<>

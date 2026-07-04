@@ -17,9 +17,18 @@ interface ChipTrayProps {
   value: number
   onChange: (value: number) => void
   disabled?: boolean
+  // Scales every chip denomination (spending division). Default 1 = base stakes.
+  factor?: number
 }
 
-export default function ChipTray({ balance, value, onChange, disabled }: ChipTrayProps) {
+// Compact chip face, e.g. 5 -> "5", 1000 -> "1K", 100000 -> "100K", 5e6 -> "5M".
+function chipFace(n: number): string {
+  if (n >= 1_000_000) return `${Number((n / 1_000_000).toFixed(1))}M`
+  if (n >= 1_000) return `${Number((n / 1_000).toFixed(1))}K`
+  return String(n)
+}
+
+export default function ChipTray({ balance, value, onChange, disabled, factor = 1 }: ChipTrayProps) {
   const add = (chip: number) => {
     if (disabled) return
     if (value + chip <= balance) onChange(value + chip)
@@ -43,20 +52,21 @@ export default function ChipTray({ balance, value, onChange, disabled }: ChipTra
 
       <div className="flex flex-wrap gap-3">
         {CHIPS.map((chip) => {
-          const affordable = !disabled && value + chip.value <= balance
+          const chipValue = chip.value * factor
+          const affordable = !disabled && value + chipValue <= balance
           return (
             <button
               key={chip.value}
-              onClick={() => add(chip.value)}
+              onClick={() => add(chipValue)}
               disabled={!affordable}
-              title={affordable ? `Add ${formatUSD(chip.value)}` : 'Not enough balance'}
+              title={affordable ? `Add ${formatUSD(chipValue)}` : 'Not enough balance'}
               className="grid h-14 w-14 place-items-center rounded-full text-xs font-bold text-white shadow-md transition enabled:hover:-translate-y-0.5 enabled:hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-30"
               style={{
                 background: `radial-gradient(circle at 50% 35%, ${chip.face}, ${chip.face} 60%, #0008)`,
                 border: `3px dashed ${chip.edge}`,
               }}
             >
-              {chip.value >= 1000 ? '1K' : chip.value}
+              {chipFace(chipValue)}
             </button>
           )
         })}
