@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { LuSettings } from "react-icons/lu";
 
@@ -84,25 +85,32 @@ export default function SettingsMenu({
 				<LuSettings className="h-5 w-5" aria-hidden="true" />
 				<span className="hidden sm:block">Settings</span>
 			</button>
-			{open &&
-				createPortal(
-					<div
-						ref={menuRef}
-						className={`fixed z-999 flex flex-col gap-4 rounded-xl border p-4 shadow-xl backdrop-blur ${themeClass ?? ""}`}
-						style={{
-							top: pos.top,
-							right: pos.right,
-							backgroundColor:
-								"color-mix(in srgb, var(--table-felt-2) 92%, black)",
-							borderColor:
-								"color-mix(in srgb, var(--ui-text) 18%, transparent)",
-							color: "var(--ui-text)",
-						}}
-					>
-						{children}
-					</div>,
-					document.body,
-				)}
+			{createPortal(
+				<AnimatePresence>
+					{open && (
+						<motion.div
+							ref={menuRef}
+							initial={{ opacity: 0, y: -8 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -8 }}
+							transition={{ duration: 0.15, ease: "easeOut" }}
+							className={`fixed z-999 flex flex-col gap-4 rounded-xl border p-4 shadow-xl backdrop-blur ${themeClass ?? ""}`}
+							style={{
+								top: pos.top,
+								right: pos.right,
+								backgroundColor:
+									"color-mix(in srgb, var(--table-felt-2) 92%, black)",
+								borderColor:
+									"color-mix(in srgb, var(--ui-text) 18%, transparent)",
+								color: "var(--ui-text)",
+							}}
+						>
+							{children}
+						</motion.div>
+					)}
+				</AnimatePresence>,
+				document.body,
+			)}
 		</>
 	);
 }
