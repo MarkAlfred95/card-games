@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { TbHelp } from "react-icons/tb";
 import HandTypes from "../../HandTypes";
 
@@ -83,21 +84,28 @@ export default function HandTypesMenu({ themeClass }: { themeClass?: string }) {
 			>
 				<TbHelp className="h-4 w-4" />
 			</button>
-			{open &&
-				createPortal(
-					<div
-						ref={menuRef}
-						className={`fixed z-999 shadow-xl ${themeClass ?? ""}`}
-						style={{
-							top: pos.top,
-							left: pos.left,
-							width: "min(25rem, calc(100vw - 16px))",
-						}}
-					>
-						<HandTypes open />
-					</div>,
-					document.body,
-				)}
+			{createPortal(
+				<AnimatePresence>
+					{open && (
+						<motion.div
+							ref={menuRef}
+							initial={{ opacity: 0, y: -8 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -8 }}
+							transition={{ duration: 0.15, ease: "easeOut" }}
+							className={`fixed z-999 shadow-xl ${themeClass ?? ""}`}
+							style={{
+								top: pos.top,
+								left: pos.left,
+								width: "min(25rem, calc(100vw - 16px))",
+							}}
+						>
+							<HandTypes open />
+						</motion.div>
+					)}
+				</AnimatePresence>,
+				document.body,
+			)}
 		</>
 	);
 }
