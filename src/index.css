@@ -1,4 +1,11 @@
 @import "tailwindcss";
+@import "@fontsource-variable/fraunces";
+
+/* Display face for headings/game titles (self-hosted via @fontsource).
+   Exposed as the `font-display` utility; body text stays on the sans stack. */
+@theme {
+	--font-display: "Fraunces Variable", ui-serif, Georgia, serif;
+}
 
 /* Sizing is shared across themes; everything scales from --card-w. */
 :root {
