@@ -6,4 +6,5 @@ export { default as HandZone } from "./HandZone";
 export { default as Seat } from "./Seat";
 export { default as Picker } from "./Picker";
 export { default as SettingsMenu } from "./SettingsMenu";
+export { default as HandTypesMenu } from "./HandTypesMenu";
 export * from "./constants";
