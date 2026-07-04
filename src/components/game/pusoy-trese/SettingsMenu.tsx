@@ -1,17 +1,60 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { LuSettings } from "react-icons/lu";
 
+// Distance (px) between the trigger button and the dropdown, matching mt-2.
+const GAP = 8;
+
 // Dropdown that holds the cosmetic Pickers. Closes on outside-click / Escape.
-export default function SettingsMenu({ children }: { children: ReactNode }) {
+// The panel is rendered into a portal on document.body and positioned with
+// fixed coordinates anchored to the trigger, so it floats above the poker table
+// (which otherwise traps it in a lower stacking context).
+export default function SettingsMenu({
+	children,
+	themeClass,
+}: {
+	children: ReactNode;
+	// Theme class carried onto the portal so the panel's CSS variables
+	// (--table-felt-2 / --ui-text) resolve outside the themed page subtree.
+	themeClass?: string;
+}) {
 	const [open, setOpen] = useState(false);
-	const ref = useRef<HTMLDivElement>(null);
+	const [pos, setPos] = useState({ top: 0, right: 0 });
+	const buttonRef = useRef<HTMLButtonElement>(null);
+	const menuRef = useRef<HTMLDivElement>(null);
+
+	// Position the panel below the button, right edges aligned.
+	useLayoutEffect(() => {
+		if (!open) return;
+		function place() {
+			const btn = buttonRef.current;
+			if (!btn) return;
+			const rect = btn.getBoundingClientRect();
+			setPos({
+				top: rect.bottom + GAP,
+				right: window.innerWidth - rect.right,
+			});
+		}
+		place();
+		window.addEventListener("resize", place);
+		window.addEventListener("scroll", place, true);
+		return () => {
+			window.removeEventListener("resize", place);
+			window.removeEventListener("scroll", place, true);
+		};
+	}, [open]);
 
 	useEffect(() => {
 		if (!open) return;
 		function onPointerDown(e: PointerEvent) {
-			if (ref.current && !ref.current.contains(e.target as Node))
-				setOpen(false);
+			const target = e.target as Node;
+			if (
+				buttonRef.current?.contains(target) ||
+				menuRef.current?.contains(target)
+			)
+				return;
+			setOpen(false);
 		}
 		function onKeyDown(e: KeyboardEvent) {
 			if (e.key === "Escape") setOpen(false);
@@ -25,8 +68,9 @@ export default function SettingsMenu({ children }: { children: ReactNode }) {
 	}, [open]);
 
 	return (
-		<div ref={ref} className="relative">
+		<>
 			<button
+				ref={buttonRef}
 				onClick={() => setOpen((v) => !v)}
 				aria-haspopup="true"
 				aria-expanded={open}
@@ -40,20 +84,25 @@ export default function SettingsMenu({ children }: { children: ReactNode }) {
 				<LuSettings className="h-5 w-5" aria-hidden="true" />
 				<span className="hidden sm:block">Settings</span>
 			</button>
-			{open && (
-				<div
-					className="absolute right-0 top-full z-999 mt-2 flex flex-col gap-4 rounded-xl border p-4 shadow-xl backdrop-blur"
-					style={{
-						backgroundColor:
-							"color-mix(in srgb, var(--table-felt-2) 92%, black)",
-						borderColor:
-							"color-mix(in srgb, var(--ui-text) 18%, transparent)",
-						color: "var(--ui-text)",
-					}}
-				>
-					{children}
-				</div>
-			)}
-		</div>
+			{open &&
+				createPortal(
+					<div
+						ref={menuRef}
+						className={`fixed z-999 flex flex-col gap-4 rounded-xl border p-4 shadow-xl backdrop-blur ${themeClass ?? ""}`}
+						style={{
+							top: pos.top,
+							right: pos.right,
+							backgroundColor:
+								"color-mix(in srgb, var(--table-felt-2) 92%, black)",
+							borderColor:
+								"color-mix(in srgb, var(--ui-text) 18%, transparent)",
+							color: "var(--ui-text)",
+						}}
+					>
+						{children}
+					</div>,
+					document.body,
+				)}
+		</>
 	);
 }
