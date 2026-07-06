@@ -125,11 +125,17 @@ export function scoreRound(
 // player. Each non-banker stakes a money-per-point amount; money won from that
 // player is (banker's point margin vs them) * their stake. The banker's totals
 // are the sum across all opponents. Money deltas are zero-sum.
+//
+// If `balances` is given, settlement is table-stakes (as in KK Pusoy): a
+// player can't lose more than their balance, and the banker's total payout is
+// capped at the banker's balance (pro-rated across winning opponents), so no
+// seat is ever driven negative.
 export function scoreBanker(
   arrangements: Arrangement[],
   bankerSeat: number,
   stakes: number[],
   options: Partial<ScoreOptions> = {},
+  balances?: number[],
 ): BankerRoundResult {
   const opts: ScoreOptions = {
     ...DEFAULT_OPTIONS,
@@ -146,14 +152,37 @@ export function scoreBanker(
     if (i === bankerSeat) continue
     const [bankerPts, playerPts] = scorePair(evals[bankerSeat], evals[i], opts)
     const stake = stakes[i] ?? 0
-    const money = bankerPts * stake
+    let money = bankerPts * stake
+    // Table stakes: an opponent can't lose more than they have.
+    if (balances && money > 0)
+      money = Math.min(money, Math.max(0, balances[i] ?? 0))
 
     pointDeltas[bankerSeat] += bankerPts
     pointDeltas[i] += playerPts
-    moneyDeltas[bankerSeat] += money
-    moneyDeltas[i] += playerPts * stake // === -money
 
     pairs.push({ seat: i, points: bankerPts, stake, money })
+  }
+
+  // Table stakes for the banker: total payouts can't exceed the banker's
+  // balance. Scale each winning opponent's collection down proportionally.
+  if (balances) {
+    const owed = pairs.reduce((s, p) => s + (p.money < 0 ? -p.money : 0), 0)
+    const bank = Math.max(0, balances[bankerSeat] ?? 0)
+    if (owed > bank) {
+      const ratio = bank / owed
+      let remaining = bank
+      for (const p of pairs)
+        if (p.money < 0) {
+          const pay = Math.min(Math.round(-p.money * ratio), remaining)
+          p.money = -pay
+          remaining -= pay
+        }
+    }
+  }
+
+  for (const p of pairs) {
+    moneyDeltas[bankerSeat] += p.money
+    moneyDeltas[p.seat] -= p.money
   }
 
   return {

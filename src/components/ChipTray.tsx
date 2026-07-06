@@ -19,6 +19,8 @@ interface ChipTrayProps {
   disabled?: boolean
   // Scales every chip denomination (spending division). Default 1 = base stakes.
   factor?: number
+  // Optional ceiling on the stake (e.g. a per-point limit); defaults to balance.
+  maxStake?: number
 }
 
 // Compact chip face, e.g. 5 -> "5", 1000 -> "1K", 100000 -> "100K", 5e6 -> "5M".
@@ -28,10 +30,18 @@ function chipFace(n: number): string {
   return String(n)
 }
 
-export default function ChipTray({ balance, value, onChange, disabled, factor = 1 }: ChipTrayProps) {
+export default function ChipTray({
+  balance,
+  value,
+  onChange,
+  disabled,
+  factor = 1,
+  maxStake,
+}: ChipTrayProps) {
+  const limit = Math.min(balance, maxStake ?? balance)
   const add = (chip: number) => {
     if (disabled) return
-    if (value + chip <= balance) onChange(value + chip)
+    if (value + chip <= limit) onChange(value + chip)
   }
 
   return (
@@ -53,7 +63,7 @@ export default function ChipTray({ balance, value, onChange, disabled, factor = 
       <div className="flex flex-wrap gap-3">
         {CHIPS.map((chip) => {
           const chipValue = chip.value * factor
-          const affordable = !disabled && value + chipValue <= balance
+          const affordable = !disabled && value + chipValue <= limit
           return (
             <button
               key={chip.value}
