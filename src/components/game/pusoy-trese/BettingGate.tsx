@@ -23,6 +23,12 @@ export default function BettingGate({
 	factor = 1,
 }: BettingGateProps) {
 	const minChip = MIN_CHIP * factor;
+	// Worst-case round swings ~24 points, so cap the per-point stake at 1/25 of
+	// the balance — losing the maximum costs about one bankroll, not several.
+	const maxStake = Math.max(
+		minChip,
+		Math.floor(balance / 25 / minChip) * minChip,
+	);
 	return (
 		<div
 			className="mx-auto w-full max-w-md rounded-2xl p-5 shadow-2xl ring-1 ring-white/15"
@@ -38,7 +44,7 @@ export default function BettingGate({
 				<FaCrown className="mr-1 inline h-3.5 w-3.5 -translate-y-px text-amber-400" />
 				{banker} is the banker. Pick chips for your per-point stake —
 				you win or lose that much for every point you beat or trail the
-				banker by.
+				banker by. Max {formatUSD(maxStake)}/pt this round.
 			</p>
 			<div className="mt-4">
 				<ChipTray
@@ -46,6 +52,7 @@ export default function BettingGate({
 					value={stake}
 					onChange={setStake}
 					factor={factor}
+					maxStake={maxStake}
 				/>
 			</div>
 			<button
