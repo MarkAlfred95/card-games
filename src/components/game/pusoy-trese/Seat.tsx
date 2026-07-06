@@ -253,11 +253,19 @@ export default function Seat({
 				</div>
 			)}
 			<div
-				className={`min-w-24 rounded-xl px-3 py-1.5 text-center shadow-lg ring-1 backdrop-blur ${
-					isYou
-						? "bg-emerald-500/25 ring-emerald-400/50"
-						: "bg-black/40 ring-white/15"
+				className={`min-w-24 rounded-xl px-3 py-1.5 text-center backdrop-blur ${
+					isYou ? "" : "bg-black/40 shadow-lg ring-1 ring-white/15"
 				}`}
+				style={
+					isYou
+						? {
+								backgroundColor:
+									"color-mix(in srgb, var(--seat-you) 25%, transparent)",
+								boxShadow:
+									"0 10px 15px -3px rgb(0 0 0 / 0.3), 0 0 0 1px color-mix(in srgb, var(--seat-you) 55%, transparent)",
+							}
+						: undefined
+				}
 			>
 				<div className="flex items-center justify-center gap-1 text-sm font-semibold leading-tight">
 					{isBanker && (

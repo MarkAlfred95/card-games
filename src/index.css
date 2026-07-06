@@ -33,6 +33,7 @@
 	--table-felt: #1a8a52;
 	--table-felt-2: #0e5235;
 	--ui-text: #f8fafc;
+	--seat-you: #34d399;
 }
 
 .theme-midnight {
@@ -46,6 +47,7 @@
 	--table-felt: #1e293b;
 	--table-felt-2: #0f172a;
 	--ui-text: #e2e8f0;
+	--seat-you: #a78bfa;
 }
 
 .theme-crimson {
@@ -59,6 +61,7 @@
 	--table-felt: #7f1d1d;
 	--table-felt-2: #4c0f0f;
 	--ui-text: #fde68a;
+	--seat-you: #f0c674;
 }
 
 .theme-ocean {
@@ -72,6 +75,7 @@
 	--table-felt: #0d9488;
 	--table-felt-2: #115e59;
 	--ui-text: #ecfeff;
+	--seat-you: #22d3ee;
 }
 
 body {
