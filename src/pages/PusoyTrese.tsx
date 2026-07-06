@@ -110,13 +110,14 @@ function botBalance(factor: number): number {
 }
 
 // A bot's per-point stake scales with its bankroll (and therefore the division):
-// a random 10–20% slice of its balance, snapped to the division's smallest chip
-// so it never looks trivial beside the division's pots. A broke bot falls back to
-// the comeback stake so it can still win some back.
+// a random ~0.5–1.5% slice of its balance, snapped to the division's smallest
+// chip. A worst-case round swings ~24 points per opponent, so a stake near 1%
+// keeps even a terrible round survivable instead of bankroll-ending. A broke
+// bot falls back to the comeback stake so it can still win some back.
 function botStake(balance: number, factor: number): number {
 	const minChip = MIN_CHIP * factor;
 	if (balance < minChip) return COMEBACK_STAKE * factor;
-	const target = balance * (0.1 + Math.random() * 0.1); // 10–20% of bankroll
+	const target = balance * (0.005 + Math.random() * 0.01); // 0.5–1.5% of bankroll
 	const stake = Math.round(target / minChip) * minChip; // snap to chip step
 	return Math.min(Math.max(stake, minChip), balance);
 }
@@ -266,7 +267,8 @@ export default function PusoyTrese() {
 						}
 					: arrangeBot(hand),
 			);
-			const res = scoreBanker(arrangements, banker, stakes);
+			// Table-stakes settlement: nobody can lose more than they have.
+			const res = scoreBanker(arrangements, banker, stakes, {}, balances);
 			wallet.adjust(res.moneyDeltas[humanSeat]);
 			setBotBalances((prev) =>
 				prev.map((b, seat) =>

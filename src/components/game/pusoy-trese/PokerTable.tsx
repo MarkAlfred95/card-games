@@ -126,6 +126,7 @@ export default function PokerTable({
 					stake={stakes[humanSeat]}
 					isBanker={humanSeat === banker}
 					isYou={true}
+					hand={hands[humanSeat]}
 					back={back}
 					reveal={reveal}
 					arrangement={arrangements?.[humanSeat]}
