@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
+import NotFound from './pages/NotFound'
 import { AVAILABLE_GAMES } from './games'
 
 export default function App() {
@@ -12,8 +13,7 @@ export default function App() {
           <Route key={game.id} path={game.path} element={<Game />} />
         ) : null
       })}
-      {/* Unknown routes fall back to the home page. */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

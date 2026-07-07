@@ -116,8 +116,7 @@ function FanRow({
 				const rotate =
 					n === 1 ? 0 : ((j / (n - 1)) * 2 - 1) * maxRotation;
 				const transformOrigin = j < 2 ? "bottom right" : "bottom left";
-				const marginLeft =
-					j === 0 ? 0 : "calc(var(--card-w) * -0.60)";
+				const marginLeft = j === 0 ? 0 : "calc(var(--card-w) * -0.60)";
 
 				if (reveal) {
 					return (
@@ -153,7 +152,11 @@ function FanRow({
 							stiffness: 260,
 							damping: 20,
 						}}
-						style={{ marginLeft, transformOrigin, marginTop: marginTop(j) }}
+						style={{
+							marginLeft,
+							transformOrigin,
+							marginTop: marginTop(j),
+						}}
 					>
 						<Card faceDown back={back} />
 					</motion.div>
@@ -204,8 +207,10 @@ export default function Seat({
 }) {
 	// In reveal mode use the real arrangement rows; otherwise a decorative fan.
 	const front = reveal && arrangement ? arrangement.front : hand?.slice(0, 3);
-	const middle = reveal && arrangement ? arrangement.middle : hand?.slice(0, 5);
-	const backRow = reveal && arrangement ? arrangement.back : hand?.slice(0, 5);
+	const middle =
+		reveal && arrangement ? arrangement.middle : hand?.slice(0, 5);
+	const backRow =
+		reveal && arrangement ? arrangement.back : hand?.slice(0, 5);
 	const showCards = Boolean(front && middle && backRow);
 	// Per-row point chips: only for a clean (non-fouled) revealed hand.
 	const scores = reveal && !foul ? rowScore : undefined;
