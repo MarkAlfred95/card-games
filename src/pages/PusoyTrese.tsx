@@ -442,8 +442,9 @@ export default function PusoyTrese() {
 										</span>
 									</div>
 									<p className="mt-1 text-xs opacity-60 leading-tight">
-										Play at your level or drop to a lower one.
-										Reach the next tier's balance to unlock it.
+										Play at your level or drop to a lower
+										one. Reach the next tier's balance to
+										unlock it.
 									</p>
 									<div className="mt-3 flex flex-col sm:grid sm:grid-cols-2 gap-3">
 										{shownDivisions.map((d) => {
