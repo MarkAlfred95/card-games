@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Card from "../components/Card";
-import CardBack from "../components/CardBack";
 import type { CSSVars } from "../styleVars";
 
 export default function NotFound() {

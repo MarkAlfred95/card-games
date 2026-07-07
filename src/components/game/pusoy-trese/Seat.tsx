@@ -285,32 +285,10 @@ export default function Seat({
 							Foul
 						</span>
 					)}
-					{reveal && foul && (
-						<span className="rounded bg-red-500/80 px-1 text-[9px] font-bold uppercase tracking-wide">
-							Foul
-						</span>
-					)}
 				</div>
 				<div className="tabular-nums text-xs opacity-90">
 					{formatUSD(balance)}
 				</div>
-				{reveal ? (
-					<div
-						className={`text-[11px] font-bold tabular-nums ${
-							money > 0
-								? "text-emerald-300"
-								: money < 0
-									? "text-red-300"
-									: "opacity-60"
-						}`}
-					>
-						{formatDelta(money)}
-					</div>
-				) : (
-					<div className="text-[10px] opacity-60">
-						{isBanker ? "banking" : `stake ${formatUSD(stake)}`}
-					</div>
-				)}
 				{reveal ? (
 					<div
 						className={`text-[11px] font-bold tabular-nums ${
