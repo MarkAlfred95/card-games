@@ -60,6 +60,9 @@ interface Room {
 	hands: string[][]; // card ids per seat
 	arrangements: (RowIds | null)[];
 	result: RoundResultView | null;
+	// Host closed the room mid-session. Kept (not deleted) so pollers get a
+	// clear "host closed" signal instead of an ambiguous 404; the TTL reaps it.
+	closed?: boolean;
 }
 
 // --- Card helpers -----------------------------------------------------------
@@ -218,6 +221,7 @@ function viewFor(room: Room, playerId: string) {
 	return {
 		code: room.code,
 		phase: room.phase,
+		closed: room.closed ?? false,
 		gameIndex: room.gameIndex,
 		totalGames: TOTAL_GAMES,
 		banker,
@@ -417,6 +421,43 @@ export async function dispatch(
 				else dealGame(room);
 				await saveRoom(room);
 				return ok(viewFor(room, b.playerId ?? ""));
+			}
+
+			// Host ends the room for everyone, in any phase. Idempotent: closing
+			// an already-closed room just returns the closed view.
+			case "close": {
+				const room = await requireRoom(b.code);
+				if (room.hostId !== b.playerId)
+					throw new ApiError(403, "Only the host can close the room");
+				room.closed = true;
+				await saveRoom(room);
+				return ok(viewFor(room, b.playerId ?? ""));
+			}
+
+			// A non-host leaves. Their seat becomes a bot: if a round is in
+			// progress we satisfy the seat's outstanding bet/submission (its
+			// cards will be arranged by arrangeBot at scoring) so the round can
+			// still complete instead of stalling on the departed player.
+			case "leave": {
+				const room = await requireRoom(b.code);
+				const seat = seatOf(room, b.playerId ?? ""); // 403 if not a member
+				if (room.hostId === b.playerId)
+					throw new ApiError(
+						400,
+						"The host closes the room instead of leaving",
+					);
+				room.players = room.players.filter((p) => p.id !== b.playerId);
+				if (room.phase === "playing") {
+					if (!room.bets[seat]) {
+						room.stakes[seat] = botStake(room.balances[seat]);
+						room.bets[seat] = true;
+					}
+					room.submitted[seat] = true;
+					if (room.submitted.every(Boolean) && room.bets.every(Boolean))
+						scoreGame(room);
+				}
+				await saveRoom(room);
+				return ok({ left: true });
 			}
 
 			default:
