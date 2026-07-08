@@ -2,6 +2,7 @@
 // comparison, sweep bonuses, and royalties. Scoring is zero-sum.
 
 import { evaluate, compareHands, CATEGORY } from './ranking'
+import { detectNatural } from './naturals'
 import type {
   Arrangement,
   BankerPair,
@@ -49,6 +50,7 @@ export function evaluateArrangement(
   const front = evaluate(arr.front)
   const foul =
     compareHands(back, middle) < 0 || compareHands(middle, front) < 0
+  const natural = detectNatural([...arr.back, ...arr.middle, ...arr.front])
 
   const royalty = foul
     ? { back: 0, middle: 0, front: 0 }
@@ -58,7 +60,7 @@ export function evaluateArrangement(
         front: royalties.front[front.category] ?? 0,
       }
 
-  return { back, middle, front, foul, royalty }
+  return { back, middle, front, foul, royalty, natural }
 }
 
 // Head-to-head score between two evaluated arrangements. Returns [aScore, bScore]
@@ -68,6 +70,17 @@ function scorePair(
   b: EvaluatedArrangement,
   opts: ScoreOptions,
 ): [number, number] {
+  // Naturals trump everything (rows, fouls, royalties): the holder collects
+  // the natural's points. Both natural: the higher one wins its points; equal
+  // naturals push.
+  if (a.natural || b.natural) {
+    const ap = a.natural?.points ?? 0
+    const bp = b.natural?.points ?? 0
+    if (ap === bp) return [0, 0]
+    const s = ap > bp ? ap : -bp
+    return [s, -s]
+  }
+
   if (a.foul && b.foul) return [0, 0]
 
   // One fouls: the clean hand scoops all 3 + sweep bonus and still collects its

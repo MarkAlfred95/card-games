@@ -18,6 +18,7 @@ import type {
 } from "@dnd-kit/core";
 import { buildDeck, shuffle, deal, RANKS } from "../game/deck";
 import { evaluate, compareHands } from "../game/ranking";
+import { detectNatural } from "../game/naturals";
 import { scoreBanker } from "../game/scoring";
 import { arrangeBot } from "../game/bot";
 import type {
@@ -208,12 +209,20 @@ export default function PusoyTrese() {
 			!!ev.back && !!ev.middle && compareHands(ev.back, ev.middle) < 0;
 		const foulMF =
 			!!ev.middle && !!ev.front && compareHands(ev.middle, ev.front) < 0;
+		// Special 13-card hand: decided by the deal, not the arrangement.
+		const natural = detectNatural([
+			...zones.back,
+			...zones.middle,
+			...zones.front,
+			...zones.hand,
+		]);
 		return {
 			ev,
 			foulBM,
 			foulMF,
 			isFoul: foulBM || foulMF,
 			complete: Boolean(ev.back && ev.middle && ev.front),
+			natural,
 		};
 	}, [zones]);
 
@@ -644,28 +653,36 @@ export default function PusoyTrese() {
 
 	// --- Active game (betting / arranging / scoring / revealed) ----------------
 
-	const statusBar = status.complete
-		? status.isFoul
-			? {
-					text: status.foulBM
-						? "Foul — middle is stronger than back"
-						: "Foul — front is stronger than middle",
-					tone: "bg-red-500/85 text-white",
-				}
+	// A natural trumps the arrangement entirely, so it overrides the foul/legal
+	// messaging — the player can score straight away.
+	const statusBar = status.natural
+		? {
+				text: `Special hand — ${status.natural.name} (${status.natural.points} pts)! Auto-wins no matter the arrangement.`,
+				tone: "bg-amber-400/90 text-slate-900",
+			}
+		: status.complete
+			? status.isFoul
+				? {
+						text: status.foulBM
+							? "Foul — middle is stronger than back"
+							: "Foul — front is stronger than middle",
+						tone: "bg-red-500/85 text-white",
+					}
+				: {
+						text: "Legal arrangement ✓ — ready to score",
+						tone: "bg-emerald-500/85 text-white",
+					}
 			: {
-					text: "Legal arrangement ✓ — ready to score",
-					tone: "bg-emerald-500/85 text-white",
-				}
-		: {
-				text: `Place all 13 cards — ${zones.hand.length} left in hand`,
-				tone: "bg-white/15",
-			};
+					text: `Place all 13 cards — ${zones.hand.length} left in hand`,
+					tone: "bg-white/15",
+				};
 
 	// Per-row point chips for the reveal. Each row's margin is the head-to-head
 	// comparison (+ royalty difference) summed across that seat's opponents:
-	// the banker faces everyone, everyone else faces only the banker.
+	// the banker faces everyone, everyone else faces only the banker. Hidden
+	// entirely when a special hand decided the round — rows didn't play.
 	const rowScores =
-		phase === "revealed" && result
+		phase === "revealed" && result && !result.evals.some((e) => e.natural)
 			? result.evals.map((_, seat) => {
 					const opps =
 						seat === banker
@@ -755,6 +772,9 @@ export default function PusoyTrese() {
 							arrangements={result?.arrangements}
 							moneyDeltas={result?.moneyDeltas}
 							foul={result?.foul}
+							naturals={result?.evals.map(
+								(e) => e.natural?.name ?? undefined,
+							)}
 							rowScores={rowScores}
 							isLast={gameIndex + 1 >= TOTAL_GAMES}
 							onNext={nextGame}

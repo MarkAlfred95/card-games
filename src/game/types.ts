@@ -41,12 +41,22 @@ export interface RoyaltySet {
   front: number
 }
 
+// A special 13-card hand (e.g. Dragon, Three Flushes) that auto-wins the round
+// for its point value, bypassing row-by-row play.
+export interface Natural {
+  key: string
+  name: string
+  points: number
+}
+
 export interface EvaluatedArrangement {
   back: HandEval
   middle: HandEval
   front: HandEval
   foul: boolean
   royalty: RoyaltySet
+  // Best natural in the seat's 13 cards, if any. Trumps rows/foul/royalties.
+  natural: Natural | null
 }
 
 export interface ScoreOptions {

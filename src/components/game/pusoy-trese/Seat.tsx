@@ -188,6 +188,7 @@ export default function Seat({
 	arrangement,
 	money = 0,
 	foul = false,
+	natural,
 	rowScore,
 	chipSide = "right",
 }: {
@@ -202,6 +203,8 @@ export default function Seat({
 	arrangement?: Arrangement;
 	money?: number;
 	foul?: boolean;
+	// Name of the seat's special hand (e.g. "Dragon"), shown as a gold badge.
+	natural?: string;
 	rowScore?: { front: number; middle: number; back: number };
 	chipSide?: "left" | "right";
 }) {
@@ -212,8 +215,9 @@ export default function Seat({
 	const backRow =
 		reveal && arrangement ? arrangement.back : hand?.slice(0, 5);
 	const showCards = Boolean(front && middle && backRow);
-	// Per-row point chips: only for a clean (non-fouled) revealed hand.
-	const scores = reveal && !foul ? rowScore : undefined;
+	// Per-row point chips: only for a clean (non-fouled) revealed hand, and not
+	// when a special hand decided the round instead of the rows.
+	const scores = reveal && !foul && !natural ? rowScore : undefined;
 
 	return (
 		<div className="flex flex-col items-center gap-1.5">
@@ -280,10 +284,17 @@ export default function Seat({
 						/>
 					)}
 					<span>{isYou ? "You" : name}</span>
-					{reveal && foul && (
-						<span className="rounded bg-red-500/80 px-1 text-[9px] font-bold uppercase tracking-wide">
-							Foul
+					{reveal && natural ? (
+						<span className="rounded bg-amber-400/90 px-1 text-[9px] font-bold uppercase tracking-wide text-slate-900">
+							{natural}
 						</span>
+					) : (
+						reveal &&
+						foul && (
+							<span className="rounded bg-red-500/80 px-1 text-[9px] font-bold uppercase tracking-wide">
+								Foul
+							</span>
+						)
 					)}
 				</div>
 				<div className="tabular-nums text-xs opacity-90">

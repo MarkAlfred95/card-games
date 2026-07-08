@@ -24,6 +24,46 @@ function HandTypes({ open = true }: HandTypesProps) {
 			</h2>
 
 			<div className="flex flex-col p-4 gap-2 overflow-y-auto">
+				{/* Special 13-card hands (naturals): auto-win the round for the
+				    listed points, no row-by-row play. */}
+				<div className="w-full flex flex-col p-2 border border-amber-400/40 rounded-lg gap-1.5 bg-amber-400/5">
+					<span className="font-medium text-amber-300">
+						Special Hands
+					</span>
+					<span className="text-xs opacity-70 font-light italic -mt-1">
+						Dealt in your 13 cards — auto-wins the round for the
+						points shown, regardless of arrangement
+					</span>
+					{(
+						[
+							["Pure Dragon", "A to K, all the same suit", 99],
+							["Dragon", "A to K, one of every rank", 13],
+							["Three Flushes", "All three rows same-suited", 3],
+							["Three Straights", "All three rows are straights", 3],
+							["Six Pairs", "Six pairs plus one odd card", 3],
+							["No Face Cards", "No J, Q, or K anywhere", 3],
+							["12 Red / Black", "12+ cards of one color", 3],
+						] as [string, string, number][]
+					).map(([name, desc, pts]) => (
+						<div
+							key={name}
+							className="flex items-center justify-between gap-2"
+						>
+							<div className="flex flex-col">
+								<span className="text-xs font-medium">
+									{name}
+								</span>
+								<span className="text-[10px] opacity-60 font-light italic">
+									{desc}
+								</span>
+							</div>
+							<div className="shrink-0 rounded-full border border-amber-400/50 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+								{pts} pts
+							</div>
+						</div>
+					))}
+				</div>
+
 				{/* Straight Flush */}
 				<div className="w-full flex flex-col p-2 border border-white/10 rounded-lg gap-2">
 					<div className="flex justify-between items-center">

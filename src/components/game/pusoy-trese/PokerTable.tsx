@@ -19,6 +19,8 @@ interface PokerTableProps {
 	arrangements?: Arrangement[];
 	moneyDeltas?: number[];
 	foul?: boolean[];
+	// Per-seat special-hand name (e.g. "Dragon"), when one decided the round.
+	naturals?: (string | undefined)[];
 	rowScores?: { front: number; middle: number; back: number }[];
 	isLast?: boolean;
 	onNext?: () => void;
@@ -38,6 +40,7 @@ export default function PokerTable({
 	arrangements,
 	moneyDeltas,
 	foul,
+	naturals,
 	rowScores,
 	isLast = false,
 	onNext,
@@ -106,6 +109,7 @@ export default function PokerTable({
 						arrangement={arrangements?.[s]}
 						money={moneyDeltas?.[s]}
 						foul={foul?.[s]}
+						natural={naturals?.[s]}
 						rowScore={rowScores?.[s]}
 						chipSide={i === 2 ? "left" : "right"}
 					/>
@@ -132,6 +136,7 @@ export default function PokerTable({
 					arrangement={arrangements?.[humanSeat]}
 					money={moneyDeltas?.[humanSeat]}
 					foul={foul?.[humanSeat]}
+					natural={naturals?.[humanSeat]}
 					rowScore={rowScores?.[humanSeat]}
 				/>
 			</div>
