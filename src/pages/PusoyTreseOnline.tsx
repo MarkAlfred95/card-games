@@ -51,6 +51,7 @@ interface SeatView {
 interface RoomView {
 	code: string;
 	phase: "lobby" | "playing" | "revealed" | "gameover";
+	closed: boolean;
 	gameIndex: number;
 	totalGames: number;
 	banker: number;
@@ -168,12 +169,14 @@ export default function PusoyTreseOnline() {
 	const [zones, setZones] = useState<Zones | null>(null);
 	const zonesGame = useRef<number>(-1);
 	const [activeCard, setActiveCard] = useState<CardModel | null>(null);
+	const [confirmClose, setConfirmClose] = useState(false);
 
 	const leaveRoom = useCallback(() => {
 		localStorage.removeItem(SESSION_KEY);
 		setSession(null);
 		setView(null);
 		setZones(null);
+		setConfirmClose(false);
 		zonesGame.current = -1;
 	}, []);
 
@@ -186,7 +189,14 @@ export default function PusoyTreseOnline() {
 				const v = await api<RoomView>(
 					`state?code=${session.code}&playerId=${session.playerId}`,
 				);
-				if (live) setView(v);
+				if (!live) return;
+				// Host closed the room: everyone else is returned to the lobby.
+				if (v.closed) {
+					if (!v.isHost) setError("The host closed the room.");
+					leaveRoom();
+					return;
+				}
+				setView(v);
 			} catch (e) {
 				// Room expired or gone: drop back to the lobby home.
 				if (live && e instanceof Error && /not found/i.test(e.message)) {
@@ -201,6 +211,37 @@ export default function PusoyTreseOnline() {
 			live = false;
 			clearInterval(id);
 		};
+	}, [session, leaveRoom]);
+
+	// Host closes the room for everyone, then drops back to the lobby home.
+	const closeRoom = useCallback(async () => {
+		if (session) {
+			try {
+				await api("close", {
+					code: session.code,
+					playerId: session.playerId,
+				});
+			} catch {
+				// Best effort — leave locally regardless.
+			}
+		}
+		leaveRoom();
+	}, [session, leaveRoom]);
+
+	// A guest leaves. Tell the server so the seat becomes a bot (keeping any
+	// in-progress round unblocked), then drop back to the lobby home.
+	const leaveGame = useCallback(async () => {
+		if (session) {
+			try {
+				await api("leave", {
+					code: session.code,
+					playerId: session.playerId,
+				});
+			} catch {
+				// Best effort — leave locally regardless.
+			}
+		}
+		leaveRoom();
 	}, [session, leaveRoom]);
 
 	// Stage the 13 dealt cards into rows once per game.
@@ -528,10 +569,10 @@ export default function PusoyTreseOnline() {
 										</p>
 									)}
 									<button
-										onClick={leaveRoom}
+										onClick={view.isHost ? closeRoom : leaveGame}
 										className="mt-3 w-full rounded-lg bg-white/5 px-3 py-2 text-xs font-medium opacity-70 ring-1 ring-white/10 transition hover:bg-white/10"
 									>
-										Leave room
+										{view.isHost ? "Close room" : "Leave room"}
 									</button>
 								</>
 							)}
@@ -670,6 +711,44 @@ export default function PusoyTreseOnline() {
 
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
 						{error && errorBar}
+
+						{/* Host can end the room mid-match; others can bail out. */}
+						<div className="flex justify-end">
+							{view.isHost ? (
+								confirmClose ? (
+									<div className="flex items-center gap-2 rounded-lg bg-red-500/15 px-3 py-1.5 text-sm font-medium ring-1 ring-red-400/40">
+										<span>Close the room for everyone?</span>
+										<button
+											onClick={closeRoom}
+											className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-bold text-white transition hover:bg-red-400"
+										>
+											Close
+										</button>
+										<button
+											onClick={() => setConfirmClose(false)}
+											className="rounded-md bg-white/10 px-2.5 py-1 text-xs font-medium transition hover:bg-white/20"
+										>
+											Cancel
+										</button>
+									</div>
+								) : (
+									<button
+										onClick={() => setConfirmClose(true)}
+										className="flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium opacity-70 ring-1 ring-white/10 transition hover:bg-white/10 hover:opacity-100"
+									>
+										<LuX className="h-3.5 w-3.5" /> Close room
+									</button>
+								)
+							) : (
+								<button
+									onClick={leaveGame}
+									className="flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium opacity-70 ring-1 ring-white/10 transition hover:bg-white/10 hover:opacity-100"
+								>
+									<LuX className="h-3.5 w-3.5" /> Leave
+								</button>
+							)}
+						</div>
+
 						{view.phase === "playing" && humanIsBanker && (
 							<div className="flex items-center gap-2 rounded-lg bg-amber-400/20 px-4 py-2 text-sm font-medium ring-1 ring-amber-400/40">
 								<FaCrown className="h-4 w-4 shrink-0 text-amber-400" />
