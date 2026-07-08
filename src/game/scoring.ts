@@ -1,8 +1,8 @@
 // Round scoring for Pusoy Trese: foul detection, per-position head-to-head
 // comparison, sweep bonuses, and royalties. Scoring is zero-sum.
 
-import { evaluate, compareHands, CATEGORY } from './ranking'
-import { detectNatural } from './naturals'
+import { evaluate, compareHands, CATEGORY } from './ranking.js'
+import { detectNatural } from './naturals.js'
 import type {
   Arrangement,
   BankerPair,

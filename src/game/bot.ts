@@ -8,9 +8,9 @@
 // subsets, so we evaluate each once (keyed by a 13-bit mask of card indices) and
 // scan partitions with cheap bitmask ops.
 
-import { RANKS } from './deck'
-import { evaluate, compareHands } from './ranking'
-import { DEFAULT_ROYALTIES } from './scoring'
+import { RANKS } from './deck.js'
+import { evaluate, compareHands } from './ranking.js'
+import { DEFAULT_ROYALTIES } from './scoring.js'
 import type { Arrangement, Card, HandEval, Rank, RoyaltyTable } from './types'
 
 const RANK_VALUE: Record<Rank, number> = Object.fromEntries(

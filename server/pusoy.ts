@@ -7,10 +7,10 @@
 // last-write-wins. At friends-playing-a-card-game scale the race window is
 // negligible; move to a Redis WATCH/Lua flow if it ever matters.
 
-import { buildDeck, shuffle, deal } from "../src/game/deck";
-import { compareHands } from "../src/game/ranking";
-import { scoreBanker } from "../src/game/scoring";
-import { arrangeBot } from "../src/game/bot";
+import { buildDeck, shuffle, deal } from "../src/game/deck.js";
+import { compareHands } from "../src/game/ranking.js";
+import { scoreBanker } from "../src/game/scoring.js";
+import { arrangeBot } from "../src/game/bot.js";
 import type { Arrangement, Card, Rank, Suit } from "../src/game/types";
 import {
 	SEATS,
@@ -18,8 +18,8 @@ import {
 	TOTAL_GAMES,
 	MIN_CHIP,
 	COMEBACK_STAKE,
-} from "../src/components/game/pusoy-trese/constants";
-import { getStore } from "./store";
+} from "../src/components/game/pusoy-trese/constants.js";
+import { getStore } from "./store.js";
 
 const ROOM_TTL = 4 * 60 * 60; // seconds; refreshed on every write
 const START_BALANCE = 1000;
