@@ -2,7 +2,7 @@
 // lives in server/pusoy.ts (shared with the vite dev middleware); this file
 // only adapts Vercel's Node request/response to `dispatch`.
 
-import { dispatch } from "../../server/pusoy";
+import { dispatch } from "../../server/pusoy.js";
 
 // Typed loosely to avoid a @vercel/node dependency; the fields used are stable.
 interface VercelReq {

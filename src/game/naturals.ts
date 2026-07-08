@@ -3,7 +3,7 @@
 // the rows are arranged (fouls and royalties don't apply) — the holder collects
 // the natural's point value from each opponent it faces.
 
-import { RANKS } from './deck'
+import { RANKS } from './deck.js'
 import type { Card, Natural, Rank } from './types'
 
 // '2'->2 ... 'A'->14
