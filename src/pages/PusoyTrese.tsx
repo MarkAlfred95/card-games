@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LuChevronUp, LuArrowRight, LuArmchair, LuX } from "react-icons/lu";
+import { LuChevronUp, LuArrowRight, LuArmchair, LuGlobe, LuX } from "react-icons/lu";
 import { FaCrown, FaTrophy } from "react-icons/fa6";
 import {
 	DndContext,
@@ -18,6 +19,7 @@ import type {
 } from "@dnd-kit/core";
 import { buildDeck, shuffle, deal, RANKS } from "../game/deck";
 import { evaluate, compareHands } from "../game/ranking";
+import { detectNatural } from "../game/naturals";
 import { scoreBanker } from "../game/scoring";
 import { arrangeBot } from "../game/bot";
 import type {
@@ -208,12 +210,20 @@ export default function PusoyTrese() {
 			!!ev.back && !!ev.middle && compareHands(ev.back, ev.middle) < 0;
 		const foulMF =
 			!!ev.middle && !!ev.front && compareHands(ev.middle, ev.front) < 0;
+		// Special 13-card hand: decided by the deal, not the arrangement.
+		const natural = detectNatural([
+			...zones.back,
+			...zones.middle,
+			...zones.front,
+			...zones.hand,
+		]);
 		return {
 			ev,
 			foulBM,
 			foulMF,
 			isFoul: foulBM || foulMF,
 			complete: Boolean(ev.back && ev.middle && ev.front),
+			natural,
 		};
 	}, [zones]);
 
@@ -412,6 +422,17 @@ export default function PusoyTrese() {
 								transition={{ duration: 0.45, ease: "easeOut" }}
 								className="mx-auto mt-6 w-full max-w-2xl rounded-2xl border border-white/10 bg-black/35 p-6 shadow-2xl shadow-black/30 backdrop-blur"
 							>
+								{/* Online multiplayer entry */}
+								<Link
+									to="/games/pusoy-trese/online"
+									className="mb-5 flex items-center justify-between rounded-xl bg-sky-400/15 px-4 py-3 ring-1 ring-sky-400/40 transition hover:bg-sky-400/25"
+								>
+									<span className="flex items-center gap-2 text-sm font-semibold">
+										<LuGlobe className="h-4 w-4 text-sky-300" />
+										Play online with friends
+									</span>
+									<LuArrowRight className="h-4 w-4 opacity-70" />
+								</Link>
 								<div className="flex gap-3 items-center">
 									<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black/20 ring-1 ring-white/10">
 										<LuArmchair className="h-8 w-8 text-amber-300" />
@@ -644,28 +665,36 @@ export default function PusoyTrese() {
 
 	// --- Active game (betting / arranging / scoring / revealed) ----------------
 
-	const statusBar = status.complete
-		? status.isFoul
-			? {
-					text: status.foulBM
-						? "Foul — middle is stronger than back"
-						: "Foul — front is stronger than middle",
-					tone: "bg-red-500/85 text-white",
-				}
+	// A natural trumps the arrangement entirely, so it overrides the foul/legal
+	// messaging — the player can score straight away.
+	const statusBar = status.natural
+		? {
+				text: `Special hand — ${status.natural.name} (${status.natural.points} pts)! Auto-wins no matter the arrangement.`,
+				tone: "bg-amber-400/90 text-slate-900",
+			}
+		: status.complete
+			? status.isFoul
+				? {
+						text: status.foulBM
+							? "Foul — middle is stronger than back"
+							: "Foul — front is stronger than middle",
+						tone: "bg-red-500/85 text-white",
+					}
+				: {
+						text: "Legal arrangement ✓ — ready to score",
+						tone: "bg-emerald-500/85 text-white",
+					}
 			: {
-					text: "Legal arrangement ✓ — ready to score",
-					tone: "bg-emerald-500/85 text-white",
-				}
-		: {
-				text: `Place all 13 cards — ${zones.hand.length} left in hand`,
-				tone: "bg-white/15",
-			};
+					text: `Place all 13 cards — ${zones.hand.length} left in hand`,
+					tone: "bg-white/15",
+				};
 
 	// Per-row point chips for the reveal. Each row's margin is the head-to-head
 	// comparison (+ royalty difference) summed across that seat's opponents:
-	// the banker faces everyone, everyone else faces only the banker.
+	// the banker faces everyone, everyone else faces only the banker. Hidden
+	// entirely when a special hand decided the round — rows didn't play.
 	const rowScores =
-		phase === "revealed" && result
+		phase === "revealed" && result && !result.evals.some((e) => e.natural)
 			? result.evals.map((_, seat) => {
 					const opps =
 						seat === banker
@@ -755,6 +784,9 @@ export default function PusoyTrese() {
 							arrangements={result?.arrangements}
 							moneyDeltas={result?.moneyDeltas}
 							foul={result?.foul}
+							naturals={result?.evals.map(
+								(e) => e.natural?.name ?? undefined,
+							)}
 							rowScores={rowScores}
 							isLast={gameIndex + 1 >= TOTAL_GAMES}
 							onNext={nextGame}
