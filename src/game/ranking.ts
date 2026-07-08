@@ -4,7 +4,7 @@
 // Per standard rules the 3-card front cannot make straights or flushes, so only
 // trips / pair / high card are possible there.
 
-import { RANKS } from './deck'
+import { RANKS } from './deck.js'
 import type { Card, Category, HandEval, Rank } from './types'
 
 // '2'->2 ... '10'->10, 'J'->11, 'Q'->12, 'K'->13, 'A'->14
