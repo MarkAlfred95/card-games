@@ -34,7 +34,7 @@ import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
 import type { BackKey } from "../cardbacks";
 import type { CSSVars } from "../styleVars";
-import { useWallet, formatUSD, formatCompactUSD } from "../wallet";
+import { useWallet, formatUSD, formatDelta, formatCompactUSD } from "../wallet";
 import { DIVISIONS, divisionFor, divisionsUpTo } from "../divisions";
 import type { Division } from "../divisions";
 import {
@@ -151,6 +151,8 @@ export default function PusoyTrese() {
 	const [humanSeat, setHumanSeat] = useState<number>(0);
 	const [gameIndex, setGameIndex] = useState<number>(0);
 	const [botBalances, setBotBalances] = useState<number[]>([0, 0, 0, 0]);
+	// Each seat's bankroll when the match began, for net-earnings standings.
+	const [startBalances, setStartBalances] = useState<number[]>([0, 0, 0, 0]);
 
 	const [round, setRound] = useState<RoundState>(() => dealRound(0));
 	const [stakes, setStakes] = useState<number[]>([0, 0, 0, 0]);
@@ -234,6 +236,9 @@ export default function PusoyTrese() {
 			s === seat ? 0 : botBalance(factor),
 		);
 		setBotBalances(bb);
+		setStartBalances(
+			bb.map((b, s) => (s === seat ? wallet.balance : b)),
+		);
 		setHumanSeat(seat);
 		setGameIndex(0);
 		enterRound(0, seat, bb);
@@ -587,9 +592,14 @@ export default function PusoyTrese() {
 	// --- Game-over screen -----------------------------------------------------
 
 	if (phase === "gameover") {
+		// Rank by net earnings over the match, not final bankroll.
 		const ranking = balances
-			.map((bal, seat) => ({ seat, bal }))
-			.sort((a, b) => b.bal - a.bal);
+			.map((bal, seat) => ({
+				seat,
+				bal,
+				earnings: bal - startBalances[seat],
+			}))
+			.sort((a, b) => b.earnings - a.earnings);
 		const youWon = ranking[0].seat === humanSeat;
 
 		return (
@@ -644,8 +654,21 @@ export default function PusoyTrese() {
 										<span className="font-semibold">
 											{i + 1}. {names[r.seat]}
 										</span>
-										<span className="font-bold tabular-nums">
-											{formatUSD(r.bal)}
+										<span className="flex items-baseline gap-2">
+											<span className="text-xs opacity-60 tabular-nums">
+												{formatUSD(r.bal)}
+											</span>
+											<span
+												className={`font-bold tabular-nums ${
+													r.earnings > 0
+														? "text-emerald-300"
+														: r.earnings < 0
+															? "text-red-300"
+															: ""
+												}`}
+											>
+												{formatDelta(r.earnings)}
+											</span>
 										</span>
 									</div>
 								))}

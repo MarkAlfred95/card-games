@@ -18,11 +18,12 @@ import {
 	TOTAL_GAMES,
 	MIN_CHIP,
 	COMEBACK_STAKE,
+	ONLINE_START_BALANCE,
 } from "../src/components/game/pusoy-trese/constants.js";
 import { getStore } from "./store.js";
 
 const ROOM_TTL = 4 * 60 * 60; // seconds; refreshed on every write
-const START_BALANCE = 100_000;
+const START_BALANCE = ONLINE_START_BALANCE;
 
 type Phase = "lobby" | "playing" | "revealed" | "gameover";
 
