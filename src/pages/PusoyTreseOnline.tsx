@@ -27,13 +27,14 @@ import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
 import type { BackKey } from "../cardbacks";
-import { formatUSD } from "../wallet";
+import { formatUSD, formatDelta } from "../wallet";
 import {
 	Header,
 	PokerTable,
 	BettingGate,
 	HandTypesMenu,
 	SEATS,
+	ONLINE_START_BALANCE,
 } from "../components/game/pusoy-trese";
 
 // --- Server view types (mirrors server/pusoy.ts viewFor) ---------------------
@@ -437,7 +438,7 @@ export default function PusoyTreseOnline() {
 									<p className="text-sm opacity-70">
 										Play with friends — empty seats are
 										filled by bots. Everyone starts at{" "}
-										{formatUSD(100_000)}.
+										{formatUSD(ONLINE_START_BALANCE)}.
 									</p>
 								</div>
 							</div>
@@ -586,9 +587,10 @@ export default function PusoyTreseOnline() {
 	// --- Game over ---------------------------------------------------------------
 
 	if (view.phase === "gameover") {
+		// Rank by net earnings over the match, not final bankroll.
 		const ranking = view.seats
-			.map((s) => ({ ...s }))
-			.sort((a, b) => b.balance - a.balance);
+			.map((s) => ({ ...s, earnings: s.balance - ONLINE_START_BALANCE }))
+			.sort((a, b) => b.earnings - a.earnings);
 		const youWon = ranking[0]?.seat === youSeat;
 		return (
 			<div className={shellClass}>
@@ -634,8 +636,21 @@ export default function PusoyTreseOnline() {
 										<span className="font-semibold">
 											{i + 1}. {names[s.seat]}
 										</span>
-										<span className="font-bold tabular-nums">
-											{formatUSD(s.balance)}
+										<span className="flex items-baseline gap-2">
+											<span className="text-xs opacity-60 tabular-nums">
+												{formatUSD(s.balance)}
+											</span>
+											<span
+												className={`font-bold tabular-nums ${
+													s.earnings > 0
+														? "text-emerald-300"
+														: s.earnings < 0
+															? "text-red-300"
+															: ""
+												}`}
+											>
+												{formatDelta(s.earnings)}
+											</span>
 										</span>
 									</div>
 								))}

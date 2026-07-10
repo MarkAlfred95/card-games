@@ -9,3 +9,7 @@ export const TOTAL_GAMES = SEATS * GAMES_PER_BANKER; // 12
 // $100/pt, scaled by the division factor) so they can still win some back.
 export const MIN_CHIP = 5;
 export const COMEBACK_STAKE = 100; // 10% of the $1K base division unit
+
+// Starting bankroll for every seat in an online room (server seeds it; the
+// client uses it to show net earnings at game over).
+export const ONLINE_START_BALANCE = 100_000;
