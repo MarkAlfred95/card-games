@@ -277,8 +277,9 @@ export default function PusoyTrese() {
 						}
 					: arrangeBot(hand),
 			);
-			// Table-stakes settlement: nobody can lose more than they have.
-			const res = scoreBanker(arrangements, banker, stakes, {}, balances);
+			// Uncapped settlement: balances may go negative, so winners always
+			// collect their full winnings.
+			const res = scoreBanker(arrangements, banker, stakes, {});
 			wallet.adjust(res.moneyDeltas[humanSeat]);
 			setBotBalances((prev) =>
 				prev.map((b, seat) =>

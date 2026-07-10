@@ -22,7 +22,7 @@ import {
 import { getStore } from "./store.js";
 
 const ROOM_TTL = 4 * 60 * 60; // seconds; refreshed on every write
-const START_BALANCE = 1000;
+const START_BALANCE = 100_000;
 
 type Phase = "lobby" | "playing" | "revealed" | "gameover";
 

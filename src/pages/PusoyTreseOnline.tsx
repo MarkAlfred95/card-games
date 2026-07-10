@@ -437,7 +437,7 @@ export default function PusoyTreseOnline() {
 									<p className="text-sm opacity-70">
 										Play with friends — empty seats are
 										filled by bots. Everyone starts at{" "}
-										{formatUSD(1000)}.
+										{formatUSD(100_000)}.
 									</p>
 								</div>
 							</div>
