@@ -47,6 +47,7 @@ import {
 import type { VoiceCue, VoiceKey } from "../voice";
 import { playSfx, setSfxVolume } from "../sfx";
 import type { SfxKey } from "../sfx";
+import { loadAudioPrefs, saveAudioPrefs } from "../audioPrefs";
 import type { CSSVars } from "../styleVars";
 import { useWallet, formatUSD, formatDelta, formatCompactUSD } from "../wallet";
 import { DIVISIONS, divisionFor, divisionsUpTo } from "../divisions";
@@ -221,19 +222,21 @@ export default function PusoyTrese() {
 	const wallet = useWallet();
 	const [theme, setTheme] = useState<ThemeKey>("classic");
 	const [back, setBack] = useState<BackKey>("lattice");
-	const [music, setMusic] = useState<MusicKey>("elevator");
-	const [voice, setVoice] = useState<VoiceKey>("on");
-	const [volumes, setVolumes] = useState<AudioLevels>({
-		music: 0.35,
-		voice: 0.9,
-		sfx: 0.7,
-	});
+	const [music, setMusic] = useState<MusicKey>(() => loadAudioPrefs().music);
+	const [voice, setVoice] = useState<VoiceKey>(() => loadAudioPrefs().voice);
+	const [volumes, setVolumes] = useState<AudioLevels>(
+		() => loadAudioPrefs().volumes,
+	);
 	const setVolume = (channel: keyof AudioLevels, value: number) =>
 		setVolumes((prev) => ({ ...prev, [channel]: value }));
 	useBgMusic(music, volumes.music);
 	useEffect(() => setVoiceEnabled(voice === "on"), [voice]);
 	useEffect(() => setVoiceVolume(volumes.voice), [volumes.voice]);
 	useEffect(() => setSfxVolume(volumes.sfx), [volumes.sfx]);
+	useEffect(
+		() => saveAudioPrefs({ music, voice, volumes }),
+		[music, voice, volumes],
+	);
 	// Greet once on entry; stop any pending lines when leaving the page.
 	useEffect(() => {
 		speak("welcome");

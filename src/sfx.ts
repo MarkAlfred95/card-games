@@ -34,7 +34,7 @@ export type SfxKey =
   | 'match_win_fanfare'
   | 'match_end'
 
-let volume = 0.7
+let volume = 0.4
 
 export function setSfxVolume(v: number) {
   volume = v
