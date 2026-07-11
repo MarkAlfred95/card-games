@@ -90,16 +90,18 @@ export const GAMES: Game[] = [
     id: 'tongits',
     name: 'Tongits',
     tagline: 'Rummy-style melds',
-    description: 'Form sets and runs, lay them down, and tongits to win.',
+    description:
+      'Form sets and runs, sapaw the table, and empty your hand for Tongits — or call Draw and win the count.',
     players: '3 players',
     path: '/games/tongits',
-    status: 'coming-soon',
+    status: 'available',
     accent: '#b91c1c',
     preview: [
       { rank: '7', suit: 'H' },
       { rank: '8', suit: 'H' },
       { rank: '9', suit: 'H' },
     ],
+    component: lazy(() => import('./pages/Tongits')),
   },
 ]
 
