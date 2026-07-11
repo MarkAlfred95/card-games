@@ -88,16 +88,18 @@ export const GAMES: Game[] = [
     id: 'lucky-nine',
     name: 'Lucky 9',
     tagline: 'Closest to nine',
-    description: 'Bet, draw, and chase a hand total as close to nine as you can.',
-    players: '2–6 players',
+    description:
+      'Bet against the banker, hirit a third card, and land closest to nine. A two-card 9 pays double.',
+    players: '4 players',
     path: '/games/lucky-nine',
-    status: 'coming-soon',
+    status: 'available',
     accent: '#0e7490',
     preview: [
       { rank: '4', suit: 'C' },
       { rank: '5', suit: 'D' },
       { rank: '9', suit: 'S' },
     ],
+    component: lazy(() => import('./pages/Lucky9')),
   },
 ]
 
