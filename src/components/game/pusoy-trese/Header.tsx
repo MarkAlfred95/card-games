@@ -4,6 +4,7 @@ import { formatUSD } from "../../../wallet";
 import { THEMES } from "../../../themes";
 import type { ThemeKey } from "../../../themes";
 import type { BackKey } from "../../../cardbacks";
+import type { MusicKey } from "../../../music";
 import SettingsMenu from "./SettingsMenu";
 import Picker from "./Picker";
 
@@ -17,6 +18,10 @@ interface HeaderProps {
 	balance: number;
 	// Active spending division label, e.g. "$10K" — shown as a badge when set.
 	division?: string;
+	// Background music selector — shown only when the page wires it up.
+	music?: MusicKey;
+	setMusic?: (m: MusicKey) => void;
+	musicOptions?: [MusicKey, string][];
 }
 
 export default function Header({
@@ -28,6 +33,9 @@ export default function Header({
 	backOptions,
 	balance,
 	division,
+	music,
+	setMusic,
+	musicOptions,
 }: HeaderProps) {
 	return (
 		<header className="w-full flex flex-wrap items-center justify-center gap-x-8 gap-y-4 bg-black/35 px-4 sm:px-6 py-4 backdrop-blur">
@@ -76,6 +84,14 @@ export default function Header({
 							value={back}
 							onChange={setBack}
 						/>
+						{music !== undefined && setMusic && musicOptions && (
+							<Picker
+								label="Background music"
+								options={musicOptions}
+								value={music}
+								onChange={setMusic}
+							/>
+						)}
 					</SettingsMenu>
 				</div>
 			</div>

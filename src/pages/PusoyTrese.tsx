@@ -33,6 +33,8 @@ import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
 import type { BackKey } from "../cardbacks";
+import { MUSIC, MUSIC_KEYS, useBgMusic } from "../music";
+import type { MusicKey } from "../music";
 import type { CSSVars } from "../styleVars";
 import { useWallet, formatUSD, formatDelta, formatCompactUSD } from "../wallet";
 import { DIVISIONS, divisionFor, divisionsUpTo } from "../divisions";
@@ -146,6 +148,8 @@ export default function PusoyTrese() {
 	const wallet = useWallet();
 	const [theme, setTheme] = useState<ThemeKey>("classic");
 	const [back, setBack] = useState<BackKey>("lattice");
+	const [music, setMusic] = useState<MusicKey>("elevator");
+	useBgMusic(music);
 
 	const [phase, setPhase] = useState<Phase>("setup");
 	const [humanSeat, setHumanSeat] = useState<number>(0);
@@ -378,6 +382,9 @@ export default function PusoyTrese() {
 	const backOptions = BACK_KEYS.map(
 		(k) => [k, BACKS[k].label] as [BackKey, string],
 	);
+	const musicOptions = MUSIC_KEYS.map(
+		(k) => [k, MUSIC[k].label] as [MusicKey, string],
+	);
 
 	const shellStyle = {} as CSSVars;
 	const shellClass = `${THEMES[theme].className} min-h-screen text-[color:var(--ui-text)]`;
@@ -420,6 +427,9 @@ export default function PusoyTrese() {
 							themeOptions={themeOptions}
 							backOptions={backOptions}
 							balance={wallet.balance}
+							music={music}
+							setMusic={setMusic}
+							musicOptions={musicOptions}
 						/>
 						<div className="p-4">
 							<motion.div
@@ -618,6 +628,9 @@ export default function PusoyTrese() {
 						backOptions={backOptions}
 						balance={wallet.balance}
 						division={formatCompactUSD(division.unit)}
+						music={music}
+						setMusic={setMusic}
+						musicOptions={musicOptions}
 					/>
 
 					<div className="relative p-4">
@@ -769,6 +782,9 @@ export default function PusoyTrese() {
 						backOptions={backOptions}
 						balance={wallet.balance}
 						division={formatCompactUSD(division.unit)}
+						music={music}
+						setMusic={setMusic}
+						musicOptions={musicOptions}
 					/>
 
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
