@@ -69,16 +69,26 @@ export const VOICE_CUES = {
 
 export type VoiceCue = keyof typeof VOICE_CUES
 
-// Natural key (src/game/naturals.ts) -> its announcement cue.
+// Natural -> its announcement cue, keyed by both the natural's key and its
+// display name (src/game/naturals.ts) — the online room view only carries
+// the name.
 export const NATURAL_CUES: Record<string, VoiceCue> = {
   'pure-dragon': 'naturalPureDragon',
+  'Pure Dragon': 'naturalPureDragon',
   dragon: 'naturalDragon',
+  Dragon: 'naturalDragon',
   'three-flushes': 'naturalThreeFlushes',
+  'Three Flushes': 'naturalThreeFlushes',
   'three-straights': 'naturalThreeStraights',
+  'Three Straights': 'naturalThreeStraights',
   'six-pairs': 'naturalSixPairs',
+  'Six Pairs': 'naturalSixPairs',
   'no-face-cards': 'naturalNoFace',
+  'No Face Cards': 'naturalNoFace',
   'all-red': 'naturalAllRed',
+  '12+ Red Cards': 'naturalAllRed',
   'all-black': 'naturalAllBlack',
+  '12+ Black Cards': 'naturalAllBlack',
 }
 
 export type VoiceKey = 'on' | 'off'
