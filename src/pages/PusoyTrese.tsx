@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LuChevronUp, LuArrowRight, LuArmchair, LuGlobe, LuX } from "react-icons/lu";
@@ -18,7 +18,7 @@ import type {
 	DragStartEvent,
 } from "@dnd-kit/core";
 import { buildDeck, shuffle, deal, RANKS } from "../game/deck";
-import { evaluate, compareHands } from "../game/ranking";
+import { evaluate, compareHands, CATEGORY } from "../game/ranking";
 import { detectNatural } from "../game/naturals";
 import { scoreBanker } from "../game/scoring";
 import { arrangeBot } from "../game/bot";
@@ -26,6 +26,7 @@ import type {
 	Arrangement,
 	BankerRoundResult,
 	Card as CardModel,
+	EvaluatedArrangement,
 } from "../game/types";
 import Card from "../components/Card";
 import DropZone from "../components/DropZone";
@@ -33,6 +34,20 @@ import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
 import type { BackKey } from "../cardbacks";
+import { MUSIC, MUSIC_KEYS, useBgMusic } from "../music";
+import type { MusicKey } from "../music";
+import {
+	speak,
+	speakAfter,
+	stopVoice,
+	setVoiceEnabled,
+	setVoiceVolume,
+	NATURAL_CUES,
+} from "../voice";
+import type { VoiceCue, VoiceKey } from "../voice";
+import { playSfx, setSfxVolume } from "../sfx";
+import type { SfxKey } from "../sfx";
+import { loadAudioPrefs, saveAudioPrefs } from "../audioPrefs";
 import type { CSSVars } from "../styleVars";
 import { useWallet, formatUSD, formatDelta, formatCompactUSD } from "../wallet";
 import { DIVISIONS, divisionFor, divisionsUpTo } from "../divisions";
@@ -48,6 +63,7 @@ import {
 	MIN_CHIP,
 	COMEBACK_STAKE,
 } from "../components/game/pusoy-trese";
+import type { AudioLevels } from "../components/game/pusoy-trese";
 
 interface Zones {
 	hand: CardModel[];
@@ -124,6 +140,66 @@ function botStake(balance: number, factor: number): number {
 	return Math.min(Math.max(stake, minChip), balance);
 }
 
+// The single most notable royalty announcement for a clean hand. Fouled hands
+// earn no royalties, so at least one royalty is non-zero when this is called.
+function royaltyCue(e: EvaluatedArrangement): VoiceCue {
+	const sfBack =
+		e.royalty.back > 0 && e.back.category === CATEGORY.STRAIGHT_FLUSH;
+	const sfMiddle =
+		e.royalty.middle > 0 && e.middle.category === CATEGORY.STRAIGHT_FLUSH;
+	if (sfBack || sfMiddle) {
+		const royal =
+			(sfBack && e.back.name === "Royal Flush") ||
+			(sfMiddle && e.middle.name === "Royal Flush");
+		return royal ? "royaltyRoyalFlush" : "royaltyStraightFlush";
+	}
+	if (
+		(e.royalty.back > 0 && e.back.category === CATEGORY.QUADS) ||
+		(e.royalty.middle > 0 && e.middle.category === CATEGORY.QUADS)
+	)
+		return "royaltyQuads";
+	if (e.royalty.front > 0) return "royaltyFrontTrips";
+	if (e.royalty.middle > 0 && e.middle.category === CATEGORY.FULL_HOUSE)
+		return "royaltyMiddleFullHouse";
+	return "royaltyMiddleTrips";
+}
+
+// The one event line worth calling out at reveal, if any: naturals, fouls,
+// sweeps, then royalties, in that order of drama. Only opponents the human
+// actually faced count (the banker faces everyone, others face the banker).
+function revealEventCue(
+	res: BankerRoundResult,
+	humanSeat: number,
+	banker: number,
+): VoiceCue | null {
+	const my = res.evals[humanSeat];
+	const opps =
+		humanSeat === banker
+			? res.evals.map((_, s) => s).filter((s) => s !== banker)
+			: [banker];
+	if (my.natural) return NATURAL_CUES[my.natural.key] ?? null;
+	if (opps.some((o) => res.evals[o].natural)) return "naturalOpponent";
+	if (my.foul) return "foulSelf";
+	const clean = opps.filter((o) => !res.evals[o].foul);
+	const rows = ["front", "middle", "back"] as const;
+	if (
+		clean.some((o) =>
+			rows.every((r) => compareHands(my[r], res.evals[o][r]) > 0),
+		)
+	)
+		return "sweep";
+	if (
+		clean.some((o) =>
+			rows.every((r) => compareHands(my[r], res.evals[o][r]) < 0),
+		)
+	)
+		return "swept";
+	if (my.royalty.back || my.royalty.middle || my.royalty.front)
+		return royaltyCue(my);
+	if (clean.length < opps.length) return "foulOpponent";
+	return null;
+}
+
 // Deal a fresh round. The human seat's 13 cards start randomly spread across the
 // three rows (Back 5 / Middle 5 / Front 3, each sorted for readability) so the
 // player rearranges by swapping rather than building from an empty board. Every
@@ -146,6 +222,26 @@ export default function PusoyTrese() {
 	const wallet = useWallet();
 	const [theme, setTheme] = useState<ThemeKey>("classic");
 	const [back, setBack] = useState<BackKey>("lattice");
+	const [music, setMusic] = useState<MusicKey>(() => loadAudioPrefs().music);
+	const [voice, setVoice] = useState<VoiceKey>(() => loadAudioPrefs().voice);
+	const [volumes, setVolumes] = useState<AudioLevels>(
+		() => loadAudioPrefs().volumes,
+	);
+	const setVolume = (channel: keyof AudioLevels, value: number) =>
+		setVolumes((prev) => ({ ...prev, [channel]: value }));
+	useBgMusic(music, volumes.music);
+	useEffect(() => setVoiceEnabled(voice === "on"), [voice]);
+	useEffect(() => setVoiceVolume(volumes.voice), [volumes.voice]);
+	useEffect(() => setSfxVolume(volumes.sfx), [volumes.sfx]);
+	useEffect(
+		() => saveAudioPrefs({ music, voice, volumes }),
+		[music, voice, volumes],
+	);
+	// Greet once on entry; stop any pending lines when leaving the page.
+	useEffect(() => {
+		speak("welcome");
+		return () => stopVoice();
+	}, []);
 
 	const [phase, setPhase] = useState<Phase>("setup");
 	const [humanSeat, setHumanSeat] = useState<number>(0);
@@ -229,6 +325,40 @@ export default function PusoyTrese() {
 		};
 	}, [zones]);
 
+	// Announce foul / ready transitions while arranging. The state right after
+	// entering the phase is recorded silently (the deal pre-fills every row), so
+	// only changes the player causes are spoken. A natural mutes both — the
+	// arrangement doesn't matter.
+	const arrangeVoiceState = useRef<{ foul: boolean; ready: boolean } | null>(
+		null,
+	);
+	useEffect(() => {
+		if (phase !== "arranging" || status.natural) {
+			arrangeVoiceState.current = null;
+			return;
+		}
+		const now = {
+			foul: status.isFoul,
+			ready: status.complete && !status.isFoul,
+		};
+		const prev = arrangeVoiceState.current;
+		arrangeVoiceState.current = now;
+		if (!prev) return;
+		if (now.foul && !prev.foul) speak("foulWarning");
+		else if (now.ready && !prev.ready) speak("arrangementReady");
+	}, [phase, status]);
+
+	// Announce when a higher spending division unlocks (seen on the setup
+	// screen). The first visit is recorded silently.
+	const knownDivisions = useRef<number | null>(null);
+	useEffect(() => {
+		if (phase !== "setup") return;
+		const n = divisionsUpTo(wallet.balance).length;
+		if (knownDivisions.current !== null && n > knownDivisions.current)
+			speakAfter("divisionUp");
+		knownDivisions.current = n;
+	}, [phase, wallet.balance]);
+
 	// --- Match flow -----------------------------------------------------------
 
 	function beginMatch(seat: number) {
@@ -260,6 +390,29 @@ export default function PusoyTrese() {
 		setResult(null);
 		// Banker doesn't bet; a broke player is auto-staked and skips the chip tray.
 		setPhase(seat === bnk || humanBroke ? "arranging" : "betting");
+
+		playSfx("card_shuffle");
+		setTimeout(() => playSfx("card_deal"), 700);
+
+		// Round-entry announcement: one milestone/banker line (or a plain dealing
+		// line), then the phase prompt. Rules recap only on the banker's first game.
+		const stintStart = gi % GAMES_PER_BANKER === 0;
+		if (stintStart && gi > 0) playSfx("banker_crown");
+		const cues: (VoiceCue | false)[] = [];
+		if (gi === 0) cues.push("matchStart");
+		else if (gi === TOTAL_GAMES - 1) cues.push("finalGame");
+		else if (gi === TOTAL_GAMES / 2) cues.push("halfway");
+		if (seat === bnk && stintStart) cues.push("youAreBanker");
+		else if (seat !== bnk && stintStart && gi > 0) cues.push("bankerRotates");
+		else if (
+			seat === bnk &&
+			gi % GAMES_PER_BANKER === GAMES_PER_BANKER - 1
+		)
+			cues.push("bankerWarning");
+		if (!cues.length) cues.push("dealing");
+		if (seat === bnk) cues.push(stintStart && "arrangeStart");
+		else cues.push(humanBroke ? "comebackStake" : "placeYourBet");
+		speak(...cues);
 	}
 
 	function placeBet() {
@@ -267,10 +420,17 @@ export default function PusoyTrese() {
 			prev.map((s, i) => (i === humanSeat ? humanStake : s)),
 		);
 		setPhase("arranging");
+		playSfx("chip_stack");
+		speak(
+			wallet.balance > 0 && humanStake >= wallet.balance * 0.25
+				? "bigBet"
+				: "betPlaced",
+		);
 	}
 
 	function handleScore() {
 		setPhase("scoring");
+		speak("scoring");
 		// Defer the heavy bot search so the "Scoring…" state paints first.
 		setTimeout(() => {
 			const arrangements: Arrangement[] = hands.map((hand, seat) =>
@@ -293,10 +453,52 @@ export default function PusoyTrese() {
 			);
 			setResult({ ...res, arrangements });
 			setPhase("revealed");
+
+			// Reveal commentary: the standout event (if any), the money verdict,
+			// and a warning if this loss left the player broke. Queued behind the
+			// "cards on the table" line rather than cutting it off.
+			const delta = res.moneyDeltas[humanSeat];
+			const big = 10 * MIN_CHIP * factor;
+			const event = revealEventCue(res, humanSeat, banker);
+
+			// Cards flip immediately; the outcome stinger and chips lag a beat.
+			playSfx("card_flip");
+			const stinger: SfxKey | null = event?.startsWith("natural")
+				? "natural_fanfare"
+				: event === "foulSelf"
+					? "foul_buzzer"
+					: event === "sweep"
+						? "sweep_fanfare"
+						: delta > 0
+							? "win_jingle"
+							: delta < 0
+								? "lose_sting"
+								: null;
+			setTimeout(() => {
+				if (stinger) playSfx(stinger);
+				if (delta !== 0) playSfx("chip_slide");
+			}, 450);
+
+			speakAfter(
+				event,
+				delta > 0
+					? delta >= big
+						? "roundWinBig"
+						: "roundWin"
+					: delta < 0
+						? -delta >= big
+							? "roundLossBig"
+							: "roundLoss"
+						: "roundPush",
+				delta < 0 &&
+					wallet.balance + delta < MIN_CHIP * factor &&
+					"broke",
+			);
 		}, 20);
 	}
 
 	function nextGame() {
+		playSfx("button_click");
 		const next = gameIndex + 1;
 		if (next >= TOTAL_GAMES) {
 			setPhase("gameover");
@@ -310,7 +512,27 @@ export default function PusoyTrese() {
 		setPhase("setup");
 		setGameIndex(0);
 		setResult(null);
+		playSfx("button_click");
+		speak("playAgain");
 	}
+
+	// Final-standings announcement, layered with a profit line when the match
+	// ended up money. Same net-earnings ranking as the game-over screen.
+	useEffect(() => {
+		if (phase !== "gameover") return;
+		const earnings = balances.map((b, s) => b - startBalances[s]);
+		const mine = earnings[humanSeat];
+		const above = earnings.filter((e) => e > mine).length;
+		playSfx(above === 0 ? "match_win_fanfare" : "match_end");
+		speak(
+			above === 0
+				? "matchWin"
+				: above === SEATS - 1
+					? "matchLoss"
+					: "matchMid",
+			mine > 0 && "matchProfit",
+		);
+	}, [phase, balances, startBalances, humanSeat]);
 
 	// --- Drag handlers --------------------------------------------------------
 
@@ -320,6 +542,7 @@ export default function PusoyTrese() {
 			? zones[fromZone].find((c) => c.id === active.id)
 			: undefined;
 		setActiveCard(card ?? null);
+		if (card) playSfx("card_pick");
 	}
 
 	function handleDragEnd({ active, over }: DragEndEvent) {
@@ -329,6 +552,17 @@ export default function PusoyTrese() {
 		if (!from) return;
 		const activeId = String(active.id);
 		const droppedOnCard = over.data.current?.type === "card";
+
+		// Foley for the outcome, mirroring the state update below: swapping two
+		// cards vs. moving into a zone's free slot.
+		if (droppedOnCard) {
+			if (String(over.id) !== activeId) playSfx("card_swap");
+		} else {
+			const to = over.id as ZoneId;
+			const fromZone = active.data.current?.zone as ZoneId;
+			if (fromZone !== to && zones[to].length < CAPACITY[to])
+				playSfx("card_drop");
+		}
 
 		setRound((prev) => {
 			const z = prev.zones;
@@ -378,6 +612,9 @@ export default function PusoyTrese() {
 	const backOptions = BACK_KEYS.map(
 		(k) => [k, BACKS[k].label] as [BackKey, string],
 	);
+	const musicOptions = MUSIC_KEYS.map(
+		(k) => [k, MUSIC[k].label] as [MusicKey, string],
+	);
 
 	const shellStyle = {} as CSSVars;
 	const shellClass = `${THEMES[theme].className} min-h-screen text-[color:var(--ui-text)]`;
@@ -420,6 +657,13 @@ export default function PusoyTrese() {
 							themeOptions={themeOptions}
 							backOptions={backOptions}
 							balance={wallet.balance}
+							music={music}
+							setMusic={setMusic}
+							musicOptions={musicOptions}
+							voice={voice}
+							setVoice={setVoice}
+							volumes={volumes}
+							onVolume={setVolume}
 						/>
 						<div className="p-4">
 							<motion.div
@@ -575,7 +819,10 @@ export default function PusoyTrese() {
 								</p>
 								{wallet.balance < 5 && (
 									<button
-										onClick={wallet.reset}
+										onClick={() => {
+											wallet.reset();
+											speak("walletReset");
+										}}
 										className="mt-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white/20"
 									>
 										Reset wallet to {formatUSD(1000)}
@@ -618,6 +865,13 @@ export default function PusoyTrese() {
 						backOptions={backOptions}
 						balance={wallet.balance}
 						division={formatCompactUSD(division.unit)}
+						music={music}
+						setMusic={setMusic}
+						musicOptions={musicOptions}
+						voice={voice}
+						setVoice={setVoice}
+						volumes={volumes}
+						onVolume={setVolume}
 					/>
 
 					<div className="relative p-4">
@@ -769,6 +1023,13 @@ export default function PusoyTrese() {
 						backOptions={backOptions}
 						balance={wallet.balance}
 						division={formatCompactUSD(division.unit)}
+						music={music}
+						setMusic={setMusic}
+						musicOptions={musicOptions}
+						voice={voice}
+						setVoice={setVoice}
+						volumes={volumes}
+						onVolume={setVolume}
 					/>
 
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
@@ -822,7 +1083,14 @@ export default function PusoyTrese() {
 								banker={names[banker]}
 								balance={wallet.balance}
 								stake={humanStake}
-								setStake={setHumanStake}
+								setStake={(v) => {
+									playSfx(
+										v > humanStake
+											? "chip_place"
+											: "button_click",
+									);
+									setHumanStake(v);
+								}}
 								onPlace={placeBet}
 								factor={factor}
 							/>

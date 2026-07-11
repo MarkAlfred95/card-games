@@ -4,8 +4,18 @@ import { formatUSD } from "../../../wallet";
 import { THEMES } from "../../../themes";
 import type { ThemeKey } from "../../../themes";
 import type { BackKey } from "../../../cardbacks";
+import type { MusicKey } from "../../../music";
+import type { VoiceKey } from "../../../voice";
 import SettingsMenu from "./SettingsMenu";
 import Picker from "./Picker";
+import Slider from "./Slider";
+
+// Per-channel audio levels (0..1).
+export interface AudioLevels {
+	music: number;
+	voice: number;
+	sfx: number;
+}
 
 interface HeaderProps {
 	theme: ThemeKey;
@@ -17,6 +27,16 @@ interface HeaderProps {
 	balance: number;
 	// Active spending division label, e.g. "$10K" — shown as a badge when set.
 	division?: string;
+	// Background music selector — shown only when the page wires it up.
+	music?: MusicKey;
+	setMusic?: (m: MusicKey) => void;
+	musicOptions?: [MusicKey, string][];
+	// Dealer voice toggle — shown only when the page wires it up.
+	voice?: VoiceKey;
+	setVoice?: (v: VoiceKey) => void;
+	// Volume sliders — shown only when the page wires them up.
+	volumes?: AudioLevels;
+	onVolume?: (channel: keyof AudioLevels, value: number) => void;
 }
 
 export default function Header({
@@ -28,6 +48,13 @@ export default function Header({
 	backOptions,
 	balance,
 	division,
+	music,
+	setMusic,
+	musicOptions,
+	voice,
+	setVoice,
+	volumes,
+	onVolume,
 }: HeaderProps) {
 	return (
 		<header className="w-full flex flex-wrap items-center justify-center gap-x-8 gap-y-4 bg-black/35 px-4 sm:px-6 py-4 backdrop-blur">
@@ -76,6 +103,46 @@ export default function Header({
 							value={back}
 							onChange={setBack}
 						/>
+						{music !== undefined && setMusic && musicOptions && (
+							<Picker
+								label="Background music"
+								options={musicOptions}
+								value={music}
+								onChange={setMusic}
+							/>
+						)}
+						{volumes && onVolume && (
+							<Slider
+								label="Music volume"
+								value={volumes.music}
+								onChange={(v) => onVolume("music", v)}
+							/>
+						)}
+						{voice !== undefined && setVoice && (
+							<Picker
+								label="Dealer voice"
+								options={[
+									["on", "On"],
+									["off", "Off"],
+								]}
+								value={voice}
+								onChange={setVoice}
+							/>
+						)}
+						{volumes && onVolume && (
+							<>
+								<Slider
+									label="Voice volume"
+									value={volumes.voice}
+									onChange={(v) => onVolume("voice", v)}
+								/>
+								<Slider
+									label="Effects volume"
+									value={volumes.sfx}
+									onChange={(v) => onVolume("sfx", v)}
+								/>
+							</>
+						)}
 					</SettingsMenu>
 				</div>
 			</div>
