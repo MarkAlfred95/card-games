@@ -33,9 +33,15 @@ import {
 	PokerTable,
 	BettingGate,
 	HandTypesMenu,
+	GameShell,
 	SEATS,
 	ONLINE_START_BALANCE,
 } from "../components/game/pusoy-trese";
+import { useAudioSettings } from "../audioPrefs";
+import { speak, speakAfter, stopVoice, NATURAL_CUES } from "../voice";
+import type { VoiceCue } from "../voice";
+import { playSfx } from "../sfx";
+import type { SfxKey } from "../sfx";
 
 // --- Server view types (mirrors server/pusoy.ts viewFor) ---------------------
 
@@ -147,9 +153,66 @@ const DUMMY_HANDS: CardModel[][] = (() => {
 	return Array.from({ length: SEATS }, () => deck.slice(0, 13));
 })();
 
+// Reveal commentary from the server result: the standout event, its sfx
+// stinger, and the money verdict. The room view carries no hand evaluations,
+// so sweeps and royalties can't be detected here — naturals and fouls cover
+// the big calls. Only opponents the player actually faced count (the banker
+// faces everyone, others face only the banker).
+function revealCues(view: RoomView) {
+	const r = view.result;
+	if (!r) return null;
+	const you = view.youSeat;
+	const opps =
+		you === view.banker
+			? view.seats.map((_, s) => s).filter((s) => s !== view.banker)
+			: [view.banker];
+	const myNatural = r.naturals[you];
+	const event: VoiceCue | null = myNatural
+		? (NATURAL_CUES[myNatural] ?? null)
+		: opps.some((o) => r.naturals[o])
+			? "naturalOpponent"
+			: r.foul[you]
+				? "foulSelf"
+				: opps.some((o) => r.foul[o])
+					? "foulOpponent"
+					: null;
+	const delta = r.moneyDeltas[you];
+	const big = 10 * view.minChip;
+	const money: VoiceCue =
+		delta > 0
+			? delta >= big
+				? "roundWinBig"
+				: "roundWin"
+			: delta < 0
+				? -delta >= big
+					? "roundLossBig"
+					: "roundLoss"
+				: "roundPush";
+	const stinger: SfxKey | null =
+		event === "foulSelf"
+			? "foul_buzzer"
+			: event?.startsWith("natural")
+				? "natural_fanfare"
+				: delta > 0
+					? "win_jingle"
+					: delta < 0
+						? "lose_sting"
+						: null;
+	return { event, money, stinger, delta };
+}
+
 export default function PusoyTreseOnline() {
 	const [theme, setTheme] = useState<ThemeKey>("classic");
 	const [back, setBack] = useState<BackKey>("lattice");
+
+	// Settings, module sync, persistence, and bg music in one hook; the result
+	// spreads straight onto the Header.
+	const audio = useAudioSettings();
+	// Greet once on entry; stop any pending lines when leaving the page.
+	useEffect(() => {
+		speak("welcome");
+		return () => stopVoice();
+	}, []);
 
 	const [name, setName] = useState(
 		() => localStorage.getItem(NAME_KEY) ?? "",
@@ -254,6 +317,73 @@ export default function PusoyTreseOnline() {
 		setStake(0);
 	}, [view]);
 
+	// Audio cues driven by server-state transitions — the room view is polled,
+	// so events arrive as diffs between snapshots. The first snapshot of a room
+	// stays silent (joining mid-match shouldn't replay announcements).
+	const prevViewRef = useRef<RoomView | null>(null);
+	useEffect(() => {
+		const prev = prevViewRef.current;
+		prevViewRef.current = view;
+		if (!view || !prev || prev.code !== view.code) return;
+
+		// New game dealt (or the match just started).
+		if (
+			view.phase === "playing" &&
+			(prev.phase === "lobby" || view.gameIndex !== prev.gameIndex)
+		) {
+			playSfx("card_shuffle");
+			setTimeout(() => playSfx("card_deal"), 700);
+			const cues: (VoiceCue | false)[] = [];
+			if (prev.phase === "lobby") cues.push("matchStart");
+			else if (view.gameIndex === view.totalGames - 1)
+				cues.push("finalGame");
+			else if (view.gameIndex === Math.floor(view.totalGames / 2))
+				cues.push("halfway");
+			if (view.banker !== prev.banker || prev.phase === "lobby") {
+				if (view.gameIndex > 0) playSfx("banker_crown");
+				cues.push(
+					view.banker === view.youSeat
+						? "youAreBanker"
+						: view.gameIndex > 0 && "bankerRotates",
+				);
+			}
+			if (!cues.length) cues.push("dealing");
+			if (view.needsBet) cues.push("placeYourBet");
+			speak(...cues);
+		}
+
+		// Everyone submitted — the round is revealed.
+		if (view.phase === "revealed" && prev.phase === "playing") {
+			const rc = revealCues(view);
+			if (rc) {
+				playSfx("card_flip");
+				setTimeout(() => {
+					if (rc.stinger) playSfx(rc.stinger);
+					if (rc.delta !== 0) playSfx("chip_slide");
+				}, 450);
+				speakAfter(rc.event, rc.money);
+			}
+		}
+
+		// Match over — final standings by net earnings.
+		if (view.phase === "gameover" && prev.phase !== "gameover") {
+			const earnings = view.seats.map(
+				(s) => s.balance - ONLINE_START_BALANCE,
+			);
+			const mine = earnings[view.youSeat];
+			const above = earnings.filter((e) => e > mine).length;
+			playSfx(above === 0 ? "match_win_fanfare" : "match_end");
+			speak(
+				above === 0
+					? "matchWin"
+					: above === view.seats.length - 1
+						? "matchLoss"
+						: "matchMid",
+				mine > 0 && "matchProfit",
+			);
+		}
+	}, [view]);
+
 	const act = useCallback(
 		async (path: string, body: object) => {
 			setBusy(true);
@@ -271,6 +401,7 @@ export default function PusoyTreseOnline() {
 	);
 
 	async function createOrJoin(mode: "create" | "join") {
+		playSfx("button_click");
 		setBusy(true);
 		setError(null);
 		try {
@@ -318,6 +449,31 @@ export default function PusoyTreseOnline() {
 		};
 	}, [zones]);
 
+	// Announce foul / ready transitions while arranging. The staged deal is
+	// recorded silently, and a natural mutes both — the arrangement doesn't
+	// matter.
+	const arrangeVoiceState = useRef<{ foul: boolean; ready: boolean } | null>(
+		null,
+	);
+	useEffect(() => {
+		const arranging =
+			view?.phase === "playing" &&
+			!view.needsBet &&
+			!view.yourSubmitted &&
+			status !== null;
+		if (!arranging || !status || status.natural) {
+			arrangeVoiceState.current = null;
+			return;
+		}
+		const foul = status.foulBM || status.foulMF;
+		const now = { foul, ready: status.complete && !foul };
+		const prev = arrangeVoiceState.current;
+		arrangeVoiceState.current = now;
+		if (!prev) return;
+		if (now.foul && !prev.foul) speak("foulWarning");
+		else if (now.ready && !prev.ready) speak("arrangementReady");
+	}, [view, status]);
+
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 	);
@@ -329,6 +485,7 @@ export default function PusoyTreseOnline() {
 				? zones[fromZone].find((c) => c.id === active.id)
 				: undefined;
 		setActiveCard(card ?? null);
+		if (card) playSfx("card_pick");
 	}
 
 	function handleDragEnd({ active, over }: DragEndEvent) {
@@ -338,6 +495,16 @@ export default function PusoyTreseOnline() {
 		if (!from) return;
 		const activeId = String(active.id);
 		const droppedOnCard = over.data.current?.type === "card";
+
+		// Foley for the outcome, mirroring the state update below: swapping two
+		// cards vs. moving into a zone's free slot.
+		if (droppedOnCard) {
+			if (String(over.id) !== activeId) playSfx("card_swap");
+		} else if (zones) {
+			const to = over.id as ZoneId;
+			if (from !== to && zones[to].length < CAPACITY[to])
+				playSfx("card_drop");
+		}
 
 		setZones((prev) => {
 			if (!prev) return prev;
@@ -379,11 +546,7 @@ export default function PusoyTreseOnline() {
 	const backOptions = BACK_KEYS.map(
 		(k) => [k, BACKS[k].label] as [BackKey, string],
 	);
-	const shellClass = `${THEMES[theme].className} min-h-screen text-[color:var(--ui-text)]`;
-	const bgStyle = {
-		background:
-			"radial-gradient(ellipse at 50% 0%, var(--table-felt), var(--table-felt-2))",
-	};
+	const shellClass = THEMES[theme].className;
 
 	const youSeat = view?.youSeat ?? 0;
 	const names =
@@ -391,6 +554,24 @@ export default function PusoyTreseOnline() {
 			i === youSeat ? "You" : (s.name ?? `Player ${i + 1}`),
 		) ?? [];
 	const yourBalance = view?.seats[youSeat]?.balance ?? 0;
+
+	// One Header element shared by every screen: GameShell keeps it mounted
+	// (and pinned to the top) across phase changes.
+	const header = (
+		<Header
+			theme={theme}
+			setTheme={setTheme}
+			back={back}
+			setBack={setBack}
+			themeOptions={themeOptions}
+			backOptions={backOptions}
+			balance={yourBalance}
+			division={
+				view && view.phase !== "lobby" ? `Room ${view.code}` : undefined
+			}
+			{...audio}
+		/>
+	);
 
 	const errorBar = error && (
 		<div className="mx-auto flex w-full max-w-md items-center justify-between gap-2 rounded-lg bg-red-500/85 px-4 py-2 text-sm font-medium text-white">
@@ -406,21 +587,8 @@ export default function PusoyTreseOnline() {
 	if (!session || !view || view.phase === "lobby") {
 		const inLobby = session && view?.phase === "lobby";
 		return (
-			<div className={shellClass}>
-				<div
-					className="relative flex min-h-screen w-full flex-col overflow-hidden"
-					style={bgStyle}
-				>
-					<Header
-						theme={theme}
-						setTheme={setTheme}
-						back={back}
-						setBack={setBack}
-						themeOptions={themeOptions}
-						backOptions={backOptions}
-						balance={inLobby ? yourBalance : 0}
-					/>
-					<div className="p-4">
+			<GameShell themeClass={shellClass} header={header}>
+				<div className="p-4">
 						<motion.div
 							initial={{ opacity: 0, y: 24 }}
 							animate={{ opacity: 1, y: 0 }}
@@ -552,12 +720,13 @@ export default function PusoyTreseOnline() {
 									</div>
 									{view.isHost ? (
 										<button
-											onClick={() =>
+											onClick={() => {
+												playSfx("button_click");
 												act("start", {
 													code: session.code,
 													playerId: session.playerId,
-												})
-											}
+												});
+											}}
 											disabled={busy}
 											className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:opacity-40"
 										>
@@ -578,9 +747,8 @@ export default function PusoyTreseOnline() {
 								</>
 							)}
 						</motion.div>
-					</div>
 				</div>
-			</div>
+			</GameShell>
 		);
 	}
 
@@ -593,21 +761,8 @@ export default function PusoyTreseOnline() {
 			.sort((a, b) => b.earnings - a.earnings);
 		const youWon = ranking[0]?.seat === youSeat;
 		return (
-			<div className={shellClass}>
-				<div
-					className="relative flex min-h-screen w-full flex-col gap-6 overflow-hidden"
-					style={bgStyle}
-				>
-					<Header
-						theme={theme}
-						setTheme={setTheme}
-						back={back}
-						setBack={setBack}
-						themeOptions={themeOptions}
-						backOptions={backOptions}
-						balance={yourBalance}
-					/>
-					<div className="relative p-4">
+			<GameShell themeClass={shellClass} header={header}>
+				<div className="relative p-4">
 						<motion.div
 							initial={{ opacity: 0, y: 24 }}
 							animate={{ opacity: 1, y: 0 }}
@@ -662,9 +817,8 @@ export default function PusoyTreseOnline() {
 								Back to lobby <LuArrowRight className="h-4 w-4" />
 							</button>
 						</motion.div>
-					</div>
 				</div>
-			</div>
+			</GameShell>
 		);
 	}
 
@@ -702,28 +856,13 @@ export default function PusoyTreseOnline() {
 				: { text: "Arrange your 13 cards", tone: "bg-white/15" };
 
 	return (
-		<div className={shellClass}>
+		<GameShell themeClass={shellClass} header={header}>
 			<DndContext
 				sensors={sensors}
 				collisionDetection={collisionDetection}
 				onDragStart={handleDragStart}
 				onDragEnd={handleDragEnd}
 			>
-				<div
-					className="flex min-h-dvh w-full flex-col overflow-x-clip"
-					style={bgStyle}
-				>
-					<Header
-						theme={theme}
-						setTheme={setTheme}
-						back={back}
-						setBack={setBack}
-						themeOptions={themeOptions}
-						backOptions={backOptions}
-						balance={yourBalance}
-						division={`Room ${view.code}`}
-					/>
-
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
 						{error && errorBar}
 
@@ -804,12 +943,13 @@ export default function PusoyTreseOnline() {
 							)}
 							rowScores={view.result?.rowScores ?? undefined}
 							isLast={view.gameIndex + 1 >= view.totalGames}
-							onNext={() =>
+							onNext={() => {
+								playSfx("button_click");
 								act("next", {
 									code: session.code,
 									playerId: session.playerId,
-								})
-							}
+								});
+							}}
 						/>
 					</div>
 
@@ -819,14 +959,28 @@ export default function PusoyTreseOnline() {
 								banker={names[view.banker]}
 								balance={yourBalance}
 								stake={stake}
-								setStake={setStake}
-								onPlace={() =>
+								setStake={(v) => {
+									playSfx(
+										v > stake
+											? "chip_place"
+											: "button_click",
+									);
+									setStake(v);
+								}}
+								onPlace={() => {
+									playSfx("chip_stack");
+									speak(
+										yourBalance > 0 &&
+											stake >= yourBalance * 0.25
+											? "bigBet"
+											: "betPlaced",
+									);
 									act("bet", {
 										code: session.code,
 										playerId: session.playerId,
 										stake,
-									})
-								}
+									});
+								}}
 							/>
 						</div>
 					) : showArrange && zones && status ? (
@@ -893,7 +1047,9 @@ export default function PusoyTreseOnline() {
 
 								<div className="flex w-full justify-end gap-2 border-t border-white/10 px-4 pt-3 pb-4 sm:gap-3">
 									<button
-										onClick={() =>
+										onClick={() => {
+											playSfx("button_click");
+											speak("scoring");
 											act("submit", {
 												code: session.code,
 												playerId: session.playerId,
@@ -906,8 +1062,8 @@ export default function PusoyTreseOnline() {
 												back: zones.back.map(
 													(c) => c.id,
 												),
-											})
-										}
+											});
+										}}
 										disabled={busy || !status.complete}
 										className="w-full cursor-pointer rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
 									>
@@ -917,7 +1073,6 @@ export default function PusoyTreseOnline() {
 							</div>
 						</div>
 					) : null}
-				</div>
 
 				<DragOverlay>
 					{activeCard ? (
@@ -929,6 +1084,6 @@ export default function PusoyTreseOnline() {
 					) : null}
 				</DragOverlay>
 			</DndContext>
-		</div>
+		</GameShell>
 	);
 }

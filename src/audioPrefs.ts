@@ -1,14 +1,25 @@
 // Audio settings persisted to localStorage (same approach as the wallet):
 // background-music track, dealer-voice toggle, and per-channel volumes.
+// `useAudioSettings` bundles the whole thing for a game page.
 
-import { MUSIC } from './music'
+import { useEffect, useState } from 'react'
+import { MUSIC, MUSIC_KEYS, useBgMusic } from './music'
 import type { MusicKey } from './music'
+import { setVoiceEnabled, setVoiceVolume } from './voice'
 import type { VoiceKey } from './voice'
+import { setSfxVolume } from './sfx'
+
+// Per-channel levels (0..1).
+export interface AudioLevels {
+  music: number
+  voice: number
+  sfx: number
+}
 
 export interface AudioPrefs {
   music: MusicKey
   voice: VoiceKey
-  volumes: { music: number; voice: number; sfx: number }
+  volumes: AudioLevels
 }
 
 const KEY = 'card-hub-audio'
@@ -56,4 +67,34 @@ export function saveAudioPrefs(prefs: AudioPrefs) {
   } catch {
     // Storage unavailable (private mode, quota) — settings just won't persist.
   }
+}
+
+// All the audio plumbing a game page needs: settings state initialized from
+// localStorage and persisted on change, playback modules kept in sync, and
+// background music playing while the page is mounted. The return shape
+// matches the Header's audio props, so pages can spread it straight in:
+// `<Header {...audio} ... />`.
+export function useAudioSettings() {
+  const [music, setMusic] = useState<MusicKey>(() => loadAudioPrefs().music)
+  const [voice, setVoice] = useState<VoiceKey>(() => loadAudioPrefs().voice)
+  const [volumes, setVolumes] = useState<AudioLevels>(
+    () => loadAudioPrefs().volumes,
+  )
+
+  useBgMusic(music, volumes.music)
+  useEffect(() => setVoiceEnabled(voice === 'on'), [voice])
+  useEffect(() => setVoiceVolume(volumes.voice), [volumes.voice])
+  useEffect(() => setSfxVolume(volumes.sfx), [volumes.sfx])
+  useEffect(
+    () => saveAudioPrefs({ music, voice, volumes }),
+    [music, voice, volumes],
+  )
+
+  const musicOptions = MUSIC_KEYS.map(
+    (k) => [k, MUSIC[k].label] as [MusicKey, string],
+  )
+  const onVolume = (channel: keyof AudioLevels, value: number) =>
+    setVolumes((prev) => ({ ...prev, [channel]: value }))
+
+  return { music, setMusic, musicOptions, voice, setVoice, volumes, onVolume }
 }
