@@ -179,6 +179,39 @@ Non-voice SFX to record or source. Same folder conventions (`src/assets/sfx/`).
 
 ---
 
+## Lucky 9 — additional voice lines
+
+Cues for the Lucky 9 game (`src/pages/Lucky9.tsx`). Same persona, format, and
+folder (`src/assets/voice_lines/`) as above. Lucky 9 reuses most of the shared
+pool — dealing, betting, banker, round win/loss/push, match results, wallet
+lines all fire as-is — so only the cues below are new. Missing files are
+skipped silently at playback, so these can be recorded in any order.
+
+| File | Trigger | Line |
+|---|---|---|
+| `lucky9_welcome.mp3` | Entering the Lucky 9 setup screen | "Welcome to Lucky 9! Closest to nine takes the money." |
+| `lucky9_match_start.mp3` | Seat chosen, match begins (pools with `match_start_a`) | "Two cards each, one shot at a third. Let's play Lucky 9!" |
+| `hirit_or_stand_a.mp3` | (variant) | "Take a third card, or stay put?" |
+| `hirit_or_stand_b.mp3` | Draw phase opens | "Hirit or stand?" |
+| `hirit_a.mp3` | Player draws a third card | "Hirit! One more card." |
+| `hirit_b.mp3` | (variant) | "Dealing you one more." |
+| `stand_pat_a.mp3` | Player stands on two cards | "Standing pat." |
+| `stand_pat_b.mp3` | (variant) | "No card — you're staying." |
+| `lucky_nine_a.mp3` | Player reveals a two-card 9 | "LUCKY NINE! That's the magic number!" |
+| `lucky_nine_b.mp3` | (variant) | "A natural nine! Lucky, lucky!" |
+| `natural_eight.mp3` | Player reveals a two-card 8 | "A natural eight — hard to beat!" |
+| `banker_lucky_nine.mp3` | The banker reveals a Lucky 9 against the player | "The banker's got the Lucky 9 — that one pays double. Ouch." |
+| `lucky_nine_opponent.mp3` | A player reveals a Lucky 9 while you bank | "A Lucky 9 at the table — double payout against the bank!" |
+
+Suggested Taglish alternates (extra variants for the random pool):
+
+| File | Replaces | Line |
+|---|---|---|
+| `tg_hirit.mp3` | hirit variant | "Hirit pa, isa pang baraha!" |
+| `tg_lucky_nine.mp3` | lucky nine variant | "Lucky nine! Swerte mo talaga!" |
+
+---
+
 ## Priority order (if recording in passes)
 
 1. **Core loop** — dealing, bet placed, scoring, round win/loss variants,
