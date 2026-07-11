@@ -84,7 +84,7 @@ export const NATURAL_CUES: Record<string, VoiceCue> = {
 export type VoiceKey = 'on' | 'off'
 
 let enabled = true
-let volume = 0.9
+let volume = 0.8
 let current: HTMLAudioElement | null = null
 let queue: string[] = []
 
