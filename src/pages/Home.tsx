@@ -7,15 +7,9 @@ import Card from '../components/Card'
 import CardBack from '../components/CardBack'
 import type { CSSVars } from '../styleVars'
 import { useWallet, formatUSD } from '../wallet'
+import logo from '../assets/card-games.png';
 
 const SUIT_GLYPH: Record<Suit, string> = { S: '♠', H: '♥', D: '♦', C: '♣' }
-
-const HEADER_SUITS: { symbol: string; color: string }[] = [
-  { symbol: '♠', color: '#94a3b8' },
-  { symbol: '♥', color: '#f87171' },
-  { symbol: '♦', color: '#f87171' },
-  { symbol: '♣', color: '#94a3b8' },
-]
 
 export default function Home() {
   const { balance } = useWallet()
@@ -39,11 +33,7 @@ export default function Home() {
           transition={{ duration: 0.5, ease: 'easeOut' }}
         >
           <div className="mb-4 flex items-center justify-center gap-3 text-xl">
-            {HEADER_SUITS.map((s) => (
-              <span key={s.symbol} style={{ color: s.color }}>
-                {s.symbol}
-              </span>
-            ))}
+            <img src={logo} alt="Card Games Logo" className="h-28 w-28" />
           </div>
           <h1 className="font-display bg-gradient-to-b from-white to-slate-400 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-6xl">
             Card Games
