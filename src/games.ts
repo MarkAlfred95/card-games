@@ -38,6 +38,23 @@ export const GAMES: Game[] = [
     component: PusoyTrese,
   },
   {
+    id: 'lucky-nine',
+    name: 'Lucky 9',
+    tagline: 'Closest to nine',
+    description:
+      'Bet against the banker, hirit a third card, and land closest to nine. A two-card 9 pays double.',
+    players: '4 players',
+    path: '/games/lucky-nine',
+    status: 'available',
+    accent: '#0e7490',
+    preview: [
+      { rank: '4', suit: 'C' },
+      { rank: '5', suit: 'D' },
+      { rank: '9', suit: 'S' },
+    ],
+    component: lazy(() => import('./pages/Lucky9')),
+  },
+  {
     id: 'poker',
     name: "Texas Hold'em",
     tagline: 'No-limit poker',
@@ -83,23 +100,6 @@ export const GAMES: Game[] = [
       { rank: '8', suit: 'H' },
       { rank: '9', suit: 'H' },
     ],
-  },
-  {
-    id: 'lucky-nine',
-    name: 'Lucky 9',
-    tagline: 'Closest to nine',
-    description:
-      'Bet against the banker, hirit a third card, and land closest to nine. A two-card 9 pays double.',
-    players: '4 players',
-    path: '/games/lucky-nine',
-    status: 'available',
-    accent: '#0e7490',
-    preview: [
-      { rank: '4', suit: 'C' },
-      { rank: '5', suit: 'D' },
-      { rank: '9', suit: 'S' },
-    ],
-    component: lazy(() => import('./pages/Lucky9')),
   },
 ]
 

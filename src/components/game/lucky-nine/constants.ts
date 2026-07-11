@@ -16,3 +16,7 @@ export function maxBetFor(balance: number, factor: number): number {
 	const minChip = MIN_CHIP * factor;
 	return Math.max(minChip, Math.floor(balance / 2 / minChip) * minChip);
 }
+
+// Starting bankroll for every seat in an online room (server seeds it; the
+// client uses it to show net earnings at game over).
+export const ONLINE_START_BALANCE = 100_000;
