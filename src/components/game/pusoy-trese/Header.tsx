@@ -6,16 +6,12 @@ import type { ThemeKey } from "../../../themes";
 import type { BackKey } from "../../../cardbacks";
 import type { MusicKey } from "../../../music";
 import type { VoiceKey } from "../../../voice";
+import type { AudioLevels } from "../../../audioPrefs";
 import SettingsMenu from "./SettingsMenu";
 import Picker from "./Picker";
 import Slider from "./Slider";
 
-// Per-channel audio levels (0..1).
-export interface AudioLevels {
-	music: number;
-	voice: number;
-	sfx: number;
-}
+export type { AudioLevels };
 
 interface HeaderProps {
 	theme: ThemeKey;

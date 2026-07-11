@@ -34,21 +34,11 @@ import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
 import type { BackKey } from "../cardbacks";
-import { MUSIC, MUSIC_KEYS, useBgMusic } from "../music";
-import type { MusicKey } from "../music";
-import {
-	speak,
-	speakAfter,
-	stopVoice,
-	setVoiceEnabled,
-	setVoiceVolume,
-	NATURAL_CUES,
-} from "../voice";
-import type { VoiceCue, VoiceKey } from "../voice";
-import { playSfx, setSfxVolume } from "../sfx";
+import { speak, speakAfter, stopVoice, NATURAL_CUES } from "../voice";
+import type { VoiceCue } from "../voice";
+import { playSfx } from "../sfx";
 import type { SfxKey } from "../sfx";
-import { loadAudioPrefs, saveAudioPrefs } from "../audioPrefs";
-import type { CSSVars } from "../styleVars";
+import { useAudioSettings } from "../audioPrefs";
 import { useWallet, formatUSD, formatDelta, formatCompactUSD } from "../wallet";
 import { DIVISIONS, divisionFor, divisionsUpTo } from "../divisions";
 import type { Division } from "../divisions";
@@ -62,8 +52,8 @@ import {
 	TOTAL_GAMES,
 	MIN_CHIP,
 	COMEBACK_STAKE,
+	GameShell,
 } from "../components/game/pusoy-trese";
-import type { AudioLevels } from "../components/game/pusoy-trese";
 
 interface Zones {
 	hand: CardModel[];
@@ -222,21 +212,9 @@ export default function PusoyTrese() {
 	const wallet = useWallet();
 	const [theme, setTheme] = useState<ThemeKey>("classic");
 	const [back, setBack] = useState<BackKey>("lattice");
-	const [music, setMusic] = useState<MusicKey>(() => loadAudioPrefs().music);
-	const [voice, setVoice] = useState<VoiceKey>(() => loadAudioPrefs().voice);
-	const [volumes, setVolumes] = useState<AudioLevels>(
-		() => loadAudioPrefs().volumes,
-	);
-	const setVolume = (channel: keyof AudioLevels, value: number) =>
-		setVolumes((prev) => ({ ...prev, [channel]: value }));
-	useBgMusic(music, volumes.music);
-	useEffect(() => setVoiceEnabled(voice === "on"), [voice]);
-	useEffect(() => setVoiceVolume(volumes.voice), [volumes.voice]);
-	useEffect(() => setSfxVolume(volumes.sfx), [volumes.sfx]);
-	useEffect(
-		() => saveAudioPrefs({ music, voice, volumes }),
-		[music, voice, volumes],
-	);
+	// Settings, module sync, persistence, and bg music in one hook; the result
+	// spreads straight onto the Header.
+	const audio = useAudioSettings();
 	// Greet once on entry; stop any pending lines when leaving the page.
 	useEffect(() => {
 		speak("welcome");
@@ -612,16 +590,25 @@ export default function PusoyTrese() {
 	const backOptions = BACK_KEYS.map(
 		(k) => [k, BACKS[k].label] as [BackKey, string],
 	);
-	const musicOptions = MUSIC_KEYS.map(
-		(k) => [k, MUSIC[k].label] as [MusicKey, string],
+	// One Header element shared by every screen: GameShell keeps it mounted
+	// (and pinned to the top) across phase changes. The division badge only
+	// applies once a match is running.
+	const header = (
+		<Header
+			theme={theme}
+			setTheme={setTheme}
+			back={back}
+			setBack={setBack}
+			themeOptions={themeOptions}
+			backOptions={backOptions}
+			balance={wallet.balance}
+			division={
+				phase === "setup" ? undefined : formatCompactUSD(division.unit)
+			}
+			{...audio}
+		/>
 	);
-
-	const shellStyle = {} as CSSVars;
-	const shellClass = `${THEMES[theme].className} min-h-screen text-[color:var(--ui-text)]`;
-	const bgStyle = {
-		background:
-			"radial-gradient(ellipse at 50% 0%, var(--table-felt), var(--table-felt-2))",
-	};
+	const shellClass = THEMES[theme].className;
 
 	// --- Setup screen ---------------------------------------------------------
 
@@ -642,30 +629,9 @@ export default function PusoyTrese() {
 		};
 
 		return (
-			<div className={shellClass} style={shellStyle}>
-				<div
-					className="relative w-full flex min-h-screen flex-col overflow-hidden"
-					style={bgStyle}
-				>
-					<AmbientGlow />
-					<div className="relative mx-auto w-full flex flex-col gap-6">
-						<Header
-							theme={theme}
-							setTheme={setTheme}
-							back={back}
-							setBack={setBack}
-							themeOptions={themeOptions}
-							backOptions={backOptions}
-							balance={wallet.balance}
-							music={music}
-							setMusic={setMusic}
-							musicOptions={musicOptions}
-							voice={voice}
-							setVoice={setVoice}
-							volumes={volumes}
-							onVolume={setVolume}
-						/>
-						<div className="p-4">
+			<GameShell themeClass={shellClass} header={header}>
+				<AmbientGlow />
+				<div className="p-4">
 							<motion.div
 								initial={{ opacity: 0, y: 24 }}
 								animate={{ opacity: 1, y: 0 }}
@@ -829,10 +795,8 @@ export default function PusoyTrese() {
 									</button>
 								)}
 							</motion.div>
-						</div>
-					</div>
 				</div>
-			</div>
+			</GameShell>
 		);
 	}
 
@@ -850,31 +814,9 @@ export default function PusoyTrese() {
 		const youWon = ranking[0].seat === humanSeat;
 
 		return (
-			<div className={shellClass} style={shellStyle}>
-				<div
-					className="relative w-full flex min-h-screen flex-col gap-6 overflow-hidden"
-					style={bgStyle}
-				>
-					<AmbientGlow />
-					<Header
-						theme={theme}
-						setTheme={setTheme}
-						back={back}
-						setBack={setBack}
-						themeOptions={themeOptions}
-						backOptions={backOptions}
-						balance={wallet.balance}
-						division={formatCompactUSD(division.unit)}
-						music={music}
-						setMusic={setMusic}
-						musicOptions={musicOptions}
-						voice={voice}
-						setVoice={setVoice}
-						volumes={volumes}
-						onVolume={setVolume}
-					/>
-
-					<div className="relative p-4">
+			<GameShell themeClass={shellClass} header={header}>
+				<AmbientGlow />
+				<div className="relative p-4">
 						<motion.div
 							initial={{ opacity: 0, y: 24 }}
 							animate={{ opacity: 1, y: 0 }}
@@ -935,9 +877,8 @@ export default function PusoyTrese() {
 								Play again <LuArrowRight className="h-4 w-4" />
 							</button>
 						</motion.div>
-					</div>
 				</div>
-			</div>
+			</GameShell>
 		);
 	}
 
@@ -1003,35 +944,13 @@ export default function PusoyTrese() {
 			: undefined;
 
 	return (
-		<div className={shellClass} style={shellStyle}>
+		<GameShell themeClass={shellClass} header={header}>
 			<DndContext
 				sensors={sensors}
 				collisionDetection={collisionDetection}
 				onDragStart={handleDragStart}
 				onDragEnd={handleDragEnd}
 			>
-				<div
-					className="w-full flex min-h-dvh flex-col overflow-x-clip"
-					style={bgStyle}
-				>
-					<Header
-						theme={theme}
-						setTheme={setTheme}
-						back={back}
-						setBack={setBack}
-						themeOptions={themeOptions}
-						backOptions={backOptions}
-						balance={wallet.balance}
-						division={formatCompactUSD(division.unit)}
-						music={music}
-						setMusic={setMusic}
-						musicOptions={musicOptions}
-						voice={voice}
-						setVoice={setVoice}
-						volumes={volumes}
-						onVolume={setVolume}
-					/>
-
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
 						{/* Table-level notices */}
 						{phase !== "betting" && humanIsBanker && (
@@ -1229,7 +1148,6 @@ export default function PusoyTrese() {
 							)}
 						</>
 					)}
-				</div>
 
 				<DragOverlay>
 					{activeCard ? (
@@ -1241,7 +1159,7 @@ export default function PusoyTrese() {
 					) : null}
 				</DragOverlay>
 			</DndContext>
-		</div>
+		</GameShell>
 	);
 }
 
@@ -1249,7 +1167,10 @@ export default function PusoyTrese() {
 // any felt theme.
 function AmbientGlow() {
 	return (
-		<div aria-hidden className="pointer-events-none absolute inset-0">
+		<div
+			aria-hidden
+			className="pointer-events-none absolute inset-0 overflow-hidden"
+		>
 			<div className="absolute -top-40 left-1/2 h-[30rem] w-[50rem] -translate-x-1/2 rounded-full bg-white/[0.06] blur-3xl" />
 			<div className="absolute -bottom-48 -right-32 h-[24rem] w-[34rem] rounded-full bg-amber-400/[0.06] blur-3xl" />
 		</div>
