@@ -63,16 +63,16 @@ There is no unit test runner configured. `verify-poker.js` is an ad-hoc Playwrig
 
 Both `pokerEngine.ts` and `scoring.ts` are pure state reducers — they take state/inputs and return **new** objects (spread/map, never mutate). Preserve this when touching game logic.
 
-### Online multiplayer (Pusoy Trese)
+### Online multiplayer (Pusoy Trese & Lucky 9)
 
-`/games/pusoy-trese/online` adds room-based multiplayer on top of the same engine:
+`/games/pusoy-trese/online` and `/games/lucky-nine/online` add room-based multiplayer on top of the same engines:
 
-- **`server/pusoy.ts`** — the room/game dispatch logic (create/join room, submit arrangement, poll state), shared between local dev and production.
+- **`server/pusoy.ts`** / **`server/lucky9.ts`** — the room/game dispatch logic per game (create/join room, play actions, poll state), shared between local dev and production. The server is the only place that sees every hand; views are filtered per player (in Lucky 9 you must bet before your cards are shown).
 - **`server/store.ts`** — room storage abstraction. Uses Upstash Redis / Vercel KV (REST API) in production when the corresponding env vars are set; falls back to an in-process `Map` for `vite dev` (not safe for serverless production, where each invocation may be a fresh process).
-- **`api/pusoy/[...route].ts`** — Vercel serverless catch-all that adapts Node's request/response to `server/pusoy.ts`'s `dispatch`.
+- **`api/pusoy/[...route].ts`** / **`api/lucky9/[...route].ts`** — Vercel serverless catch-alls that adapt Node's request/response to each server module's `dispatch`.
 - **`vercel.json`** — SPA rewrite so all non-`/api` routes fall through to `index.html`.
 
-The client polls the API for room/game state rather than using websockets.
+The clients poll the API for room/game state rather than using websockets.
 
 ### Wallet
 

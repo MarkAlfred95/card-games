@@ -14,8 +14,11 @@ interface Lucky9TableProps {
 	back: BackKey;
 	gameIndex: number;
 	totalGames: number;
-	// Reveal mode (after the round settles): flip the bots' cards over.
+	// Reveal mode (after the round settles): flip the other seats' cards over.
 	reveal?: boolean;
+	// Whether the human's own fan shows faces during play (hidden while betting,
+	// and online until the server has accepted the bet).
+	humanFaceUp?: boolean;
 	values?: number[];
 	naturals?: (string | undefined)[];
 	moneyDeltas?: number[];
@@ -36,6 +39,7 @@ export default function Lucky9Table({
 	gameIndex,
 	totalGames,
 	reveal = false,
+	humanFaceUp = true,
 	values,
 	naturals,
 	moneyDeltas,
@@ -124,7 +128,7 @@ export default function Lucky9Table({
 					isYou={true}
 					cards={hands[humanSeat]}
 					back={back}
-					faceUp
+					faceUp={humanFaceUp}
 					reveal={reveal}
 					value={values?.[humanSeat]}
 					natural={naturals?.[humanSeat]}

@@ -1,8 +1,11 @@
 import { Routes, Route } from 'react-router-dom'
+import { lazy } from 'react'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
 import PusoyTreseOnline from './pages/PusoyTreseOnline'
 import { AVAILABLE_GAMES } from './games'
+
+const Lucky9Online = lazy(() => import('./pages/Lucky9Online'))
 
 export default function App() {
   return (
@@ -14,9 +17,10 @@ export default function App() {
           <Route key={game.id} path={game.path} element={<Game />} />
         ) : null
       })}
-      {/* Online (multiplayer) mode of Pusoy Trese — a sub-route of the game,
-          not a games.ts entry, so it doesn't get its own home tile. */}
+      {/* Online (multiplayer) modes — sub-routes of their games, not games.ts
+          entries, so they don't get their own home tiles. */}
       <Route path="/games/pusoy-trese/online" element={<PusoyTreseOnline />} />
+      <Route path="/games/lucky-nine/online" element={<Lucky9Online />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )

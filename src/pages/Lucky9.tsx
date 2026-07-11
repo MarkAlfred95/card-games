@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LuArrowRight, LuArmchair } from "react-icons/lu";
+import { LuArrowRight, LuArmchair, LuGlobe } from "react-icons/lu";
 import { FaCrown, FaTrophy } from "react-icons/fa6";
 import { buildDeck, shuffle, deal } from "../game/deck";
 import {
@@ -421,6 +422,17 @@ export default function Lucky9() {
 						transition={{ duration: 0.45, ease: "easeOut" }}
 						className="mx-auto mt-6 w-full max-w-2xl rounded-2xl border border-white/10 bg-black/35 p-6 shadow-2xl shadow-black/30 backdrop-blur"
 					>
+						{/* Online multiplayer entry */}
+						<Link
+							to="/games/lucky-nine/online"
+							className="mb-5 flex items-center justify-between rounded-xl bg-sky-400/15 px-4 py-3 ring-1 ring-sky-400/40 transition hover:bg-sky-400/25"
+						>
+							<span className="flex items-center gap-2 text-sm font-semibold">
+								<LuGlobe className="h-4 w-4 text-sky-300" />
+								Play online with friends
+							</span>
+							<LuArrowRight className="h-4 w-4 opacity-70" />
+						</Link>
 						<div className="flex gap-3 items-center">
 							<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black/20 ring-1 ring-white/10">
 								<LuArmchair className="h-8 w-8 text-amber-300" />
@@ -700,6 +712,9 @@ export default function Lucky9() {
 					gameIndex={gameIndex}
 					totalGames={TOTAL_GAMES}
 					reveal={phase === "revealed"}
+					// Cards stay hidden until the bet is down — knowing your
+					// total before betting would trivialize the bet.
+					humanFaceUp={phase !== "betting"}
 					values={result?.values}
 					naturals={result?.naturals.map((n) =>
 						n ? NATURAL_NAMES[n] : undefined,
