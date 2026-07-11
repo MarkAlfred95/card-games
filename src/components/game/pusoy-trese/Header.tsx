@@ -5,6 +5,7 @@ import { THEMES } from "../../../themes";
 import type { ThemeKey } from "../../../themes";
 import type { BackKey } from "../../../cardbacks";
 import type { MusicKey } from "../../../music";
+import type { VoiceKey } from "../../../voice";
 import SettingsMenu from "./SettingsMenu";
 import Picker from "./Picker";
 
@@ -22,6 +23,9 @@ interface HeaderProps {
 	music?: MusicKey;
 	setMusic?: (m: MusicKey) => void;
 	musicOptions?: [MusicKey, string][];
+	// Dealer voice toggle — shown only when the page wires it up.
+	voice?: VoiceKey;
+	setVoice?: (v: VoiceKey) => void;
 }
 
 export default function Header({
@@ -36,6 +40,8 @@ export default function Header({
 	music,
 	setMusic,
 	musicOptions,
+	voice,
+	setVoice,
 }: HeaderProps) {
 	return (
 		<header className="w-full flex flex-wrap items-center justify-center gap-x-8 gap-y-4 bg-black/35 px-4 sm:px-6 py-4 backdrop-blur">
@@ -90,6 +96,17 @@ export default function Header({
 								options={musicOptions}
 								value={music}
 								onChange={setMusic}
+							/>
+						)}
+						{voice !== undefined && setVoice && (
+							<Picker
+								label="Dealer voice"
+								options={[
+									["on", "On"],
+									["off", "Off"],
+								]}
+								value={voice}
+								onChange={setVoice}
 							/>
 						)}
 					</SettingsMenu>
