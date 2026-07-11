@@ -8,6 +8,14 @@ import type { MusicKey } from "../../../music";
 import type { VoiceKey } from "../../../voice";
 import SettingsMenu from "./SettingsMenu";
 import Picker from "./Picker";
+import Slider from "./Slider";
+
+// Per-channel audio levels (0..1).
+export interface AudioLevels {
+	music: number;
+	voice: number;
+	sfx: number;
+}
 
 interface HeaderProps {
 	theme: ThemeKey;
@@ -26,6 +34,9 @@ interface HeaderProps {
 	// Dealer voice toggle — shown only when the page wires it up.
 	voice?: VoiceKey;
 	setVoice?: (v: VoiceKey) => void;
+	// Volume sliders — shown only when the page wires them up.
+	volumes?: AudioLevels;
+	onVolume?: (channel: keyof AudioLevels, value: number) => void;
 }
 
 export default function Header({
@@ -42,6 +53,8 @@ export default function Header({
 	musicOptions,
 	voice,
 	setVoice,
+	volumes,
+	onVolume,
 }: HeaderProps) {
 	return (
 		<header className="w-full flex flex-wrap items-center justify-center gap-x-8 gap-y-4 bg-black/35 px-4 sm:px-6 py-4 backdrop-blur">
@@ -98,6 +111,13 @@ export default function Header({
 								onChange={setMusic}
 							/>
 						)}
+						{volumes && onVolume && (
+							<Slider
+								label="Music volume"
+								value={volumes.music}
+								onChange={(v) => onVolume("music", v)}
+							/>
+						)}
 						{voice !== undefined && setVoice && (
 							<Picker
 								label="Dealer voice"
@@ -108,6 +128,20 @@ export default function Header({
 								value={voice}
 								onChange={setVoice}
 							/>
+						)}
+						{volumes && onVolume && (
+							<>
+								<Slider
+									label="Voice volume"
+									value={volumes.voice}
+									onChange={(v) => onVolume("voice", v)}
+								/>
+								<Slider
+									label="Effects volume"
+									value={volumes.sfx}
+									onChange={(v) => onVolume("sfx", v)}
+								/>
+							</>
 						)}
 					</SettingsMenu>
 				</div>

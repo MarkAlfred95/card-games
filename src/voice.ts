@@ -84,12 +84,18 @@ export const NATURAL_CUES: Record<string, VoiceCue> = {
 export type VoiceKey = 'on' | 'off'
 
 let enabled = true
+let volume = 0.9
 let current: HTMLAudioElement | null = null
 let queue: string[] = []
 
 export function setVoiceEnabled(on: boolean) {
   enabled = on
   if (!on) stopVoice()
+}
+
+export function setVoiceVolume(v: number) {
+  volume = v
+  if (current) current.volume = v
 }
 
 export function stopVoice() {
@@ -109,7 +115,7 @@ function playNext() {
     return
   }
   const audio = new Audio(url)
-  audio.volume = 0.9
+  audio.volume = volume
   audio.onended = playNext
   current = audio
   // Autoplay may be blocked before the first user gesture — skip ahead.

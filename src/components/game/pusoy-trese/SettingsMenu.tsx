@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { LuSettings } from "react-icons/lu";
+import { playSfx } from "../../../sfx";
 
 // Distance (px) between the trigger button and the dropdown, matching mt-2.
 const GAP = 8;
@@ -72,7 +73,10 @@ export default function SettingsMenu({
 		<>
 			<button
 				ref={buttonRef}
-				onClick={() => setOpen((v) => !v)}
+				onClick={() => {
+					playSfx(open ? "menu_close" : "menu_open");
+					setOpen((v) => !v);
+				}}
 				aria-haspopup="true"
 				aria-expanded={open}
 				title="Settings"

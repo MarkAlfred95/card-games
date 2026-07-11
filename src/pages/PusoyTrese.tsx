@@ -41,9 +41,12 @@ import {
 	speakAfter,
 	stopVoice,
 	setVoiceEnabled,
+	setVoiceVolume,
 	NATURAL_CUES,
 } from "../voice";
 import type { VoiceCue, VoiceKey } from "../voice";
+import { playSfx, setSfxVolume } from "../sfx";
+import type { SfxKey } from "../sfx";
 import type { CSSVars } from "../styleVars";
 import { useWallet, formatUSD, formatDelta, formatCompactUSD } from "../wallet";
 import { DIVISIONS, divisionFor, divisionsUpTo } from "../divisions";
@@ -59,6 +62,7 @@ import {
 	MIN_CHIP,
 	COMEBACK_STAKE,
 } from "../components/game/pusoy-trese";
+import type { AudioLevels } from "../components/game/pusoy-trese";
 
 interface Zones {
 	hand: CardModel[];
@@ -218,9 +222,18 @@ export default function PusoyTrese() {
 	const [theme, setTheme] = useState<ThemeKey>("classic");
 	const [back, setBack] = useState<BackKey>("lattice");
 	const [music, setMusic] = useState<MusicKey>("elevator");
-	useBgMusic(music);
 	const [voice, setVoice] = useState<VoiceKey>("on");
+	const [volumes, setVolumes] = useState<AudioLevels>({
+		music: 0.35,
+		voice: 0.9,
+		sfx: 0.7,
+	});
+	const setVolume = (channel: keyof AudioLevels, value: number) =>
+		setVolumes((prev) => ({ ...prev, [channel]: value }));
+	useBgMusic(music, volumes.music);
 	useEffect(() => setVoiceEnabled(voice === "on"), [voice]);
+	useEffect(() => setVoiceVolume(volumes.voice), [volumes.voice]);
+	useEffect(() => setSfxVolume(volumes.sfx), [volumes.sfx]);
 	// Greet once on entry; stop any pending lines when leaving the page.
 	useEffect(() => {
 		speak("welcome");
@@ -375,9 +388,13 @@ export default function PusoyTrese() {
 		// Banker doesn't bet; a broke player is auto-staked and skips the chip tray.
 		setPhase(seat === bnk || humanBroke ? "arranging" : "betting");
 
+		playSfx("card_shuffle");
+		setTimeout(() => playSfx("card_deal"), 700);
+
 		// Round-entry announcement: one milestone/banker line (or a plain dealing
 		// line), then the phase prompt. Rules recap only on the banker's first game.
 		const stintStart = gi % GAMES_PER_BANKER === 0;
+		if (stintStart && gi > 0) playSfx("banker_crown");
 		const cues: (VoiceCue | false)[] = [];
 		if (gi === 0) cues.push("matchStart");
 		else if (gi === TOTAL_GAMES - 1) cues.push("finalGame");
@@ -400,6 +417,7 @@ export default function PusoyTrese() {
 			prev.map((s, i) => (i === humanSeat ? humanStake : s)),
 		);
 		setPhase("arranging");
+		playSfx("chip_stack");
 		speak(
 			wallet.balance > 0 && humanStake >= wallet.balance * 0.25
 				? "bigBet"
@@ -438,8 +456,28 @@ export default function PusoyTrese() {
 			// "cards on the table" line rather than cutting it off.
 			const delta = res.moneyDeltas[humanSeat];
 			const big = 10 * MIN_CHIP * factor;
+			const event = revealEventCue(res, humanSeat, banker);
+
+			// Cards flip immediately; the outcome stinger and chips lag a beat.
+			playSfx("card_flip");
+			const stinger: SfxKey | null = event?.startsWith("natural")
+				? "natural_fanfare"
+				: event === "foulSelf"
+					? "foul_buzzer"
+					: event === "sweep"
+						? "sweep_fanfare"
+						: delta > 0
+							? "win_jingle"
+							: delta < 0
+								? "lose_sting"
+								: null;
+			setTimeout(() => {
+				if (stinger) playSfx(stinger);
+				if (delta !== 0) playSfx("chip_slide");
+			}, 450);
+
 			speakAfter(
-				revealEventCue(res, humanSeat, banker),
+				event,
 				delta > 0
 					? delta >= big
 						? "roundWinBig"
@@ -457,6 +495,7 @@ export default function PusoyTrese() {
 	}
 
 	function nextGame() {
+		playSfx("button_click");
 		const next = gameIndex + 1;
 		if (next >= TOTAL_GAMES) {
 			setPhase("gameover");
@@ -470,6 +509,7 @@ export default function PusoyTrese() {
 		setPhase("setup");
 		setGameIndex(0);
 		setResult(null);
+		playSfx("button_click");
 		speak("playAgain");
 	}
 
@@ -480,6 +520,7 @@ export default function PusoyTrese() {
 		const earnings = balances.map((b, s) => b - startBalances[s]);
 		const mine = earnings[humanSeat];
 		const above = earnings.filter((e) => e > mine).length;
+		playSfx(above === 0 ? "match_win_fanfare" : "match_end");
 		speak(
 			above === 0
 				? "matchWin"
@@ -498,6 +539,7 @@ export default function PusoyTrese() {
 			? zones[fromZone].find((c) => c.id === active.id)
 			: undefined;
 		setActiveCard(card ?? null);
+		if (card) playSfx("card_pick");
 	}
 
 	function handleDragEnd({ active, over }: DragEndEvent) {
@@ -507,6 +549,17 @@ export default function PusoyTrese() {
 		if (!from) return;
 		const activeId = String(active.id);
 		const droppedOnCard = over.data.current?.type === "card";
+
+		// Foley for the outcome, mirroring the state update below: swapping two
+		// cards vs. moving into a zone's free slot.
+		if (droppedOnCard) {
+			if (String(over.id) !== activeId) playSfx("card_swap");
+		} else {
+			const to = over.id as ZoneId;
+			const fromZone = active.data.current?.zone as ZoneId;
+			if (fromZone !== to && zones[to].length < CAPACITY[to])
+				playSfx("card_drop");
+		}
 
 		setRound((prev) => {
 			const z = prev.zones;
@@ -606,6 +659,8 @@ export default function PusoyTrese() {
 							musicOptions={musicOptions}
 							voice={voice}
 							setVoice={setVoice}
+							volumes={volumes}
+							onVolume={setVolume}
 						/>
 						<div className="p-4">
 							<motion.div
@@ -812,6 +867,8 @@ export default function PusoyTrese() {
 						musicOptions={musicOptions}
 						voice={voice}
 						setVoice={setVoice}
+						volumes={volumes}
+						onVolume={setVolume}
 					/>
 
 					<div className="relative p-4">
@@ -968,6 +1025,8 @@ export default function PusoyTrese() {
 						musicOptions={musicOptions}
 						voice={voice}
 						setVoice={setVoice}
+						volumes={volumes}
+						onVolume={setVolume}
 					/>
 
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
@@ -1021,7 +1080,14 @@ export default function PusoyTrese() {
 								banker={names[banker]}
 								balance={wallet.balance}
 								stake={humanStake}
-								setStake={setHumanStake}
+								setStake={(v) => {
+									playSfx(
+										v > humanStake
+											? "chip_place"
+											: "button_click",
+									);
+									setHumanStake(v);
+								}}
 								onPlace={placeBet}
 								factor={factor}
 							/>
