@@ -57,10 +57,6 @@ export const VOICE_CUES = {
   naturalAllRed: ['natural_all_red'],
   naturalAllBlack: ['natural_all_black'],
   naturalOpponent: ['natural_opponent'],
-  // Lucky 9 cues. Recordings that don't exist yet are skipped at playback
-  // (resolve() filters on FILES), so these can ship ahead of the audio —
-  // script in docs/voice-lines.md. lucky9MatchStart borrows the generic
-  // match_start_a take ("Seats taken...") as a variant that already exists.
   lucky9Welcome: ['lucky9_welcome'],
   lucky9MatchStart: ['match_start_a', 'lucky9_match_start'],
   hiritOrStand: ['hirit_or_stand_a', 'hirit_or_stand_b'],
