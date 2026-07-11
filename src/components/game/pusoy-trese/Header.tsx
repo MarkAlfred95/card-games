@@ -14,6 +14,8 @@ import Slider from "./Slider";
 export type { AudioLevels };
 
 interface HeaderProps {
+	// Game name in the top bar; the header is shared across game pages.
+	title?: string;
 	theme: ThemeKey;
 	setTheme: (t: ThemeKey) => void;
 	back: BackKey;
@@ -36,6 +38,7 @@ interface HeaderProps {
 }
 
 export default function Header({
+	title = "Pusoy Trese",
 	theme,
 	setTheme,
 	back,
@@ -65,7 +68,7 @@ export default function Header({
 						<span className="hidden sm:block">Games</span>
 					</Link>
 					<h1 className="font-display text-2xl font-semibold tracking-tight">
-						Pusoy Trese
+						{title}
 					</h1>
 					{division && (
 						<span
