@@ -21,6 +21,8 @@ interface ChipTrayProps {
   factor?: number
   // Optional ceiling on the stake (e.g. a per-point limit); defaults to balance.
   maxStake?: number
+  // Heading above the running total; games override the per-point default.
+  label?: string
 }
 
 // Compact chip face, e.g. 5 -> "5", 1000 -> "1K", 100000 -> "100K", 5e6 -> "5M".
@@ -37,6 +39,7 @@ export default function ChipTray({
   disabled,
   factor = 1,
   maxStake,
+  label = 'Your stake (per point)',
 }: ChipTrayProps) {
   const limit = Math.min(balance, maxStake ?? balance)
   const add = (chip: number) => {
@@ -48,7 +51,7 @@ export default function ChipTray({
     <div className="rounded-xl bg-black/25 p-4">
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide opacity-60">Your stake (per point)</p>
+          <p className="text-xs uppercase tracking-wide opacity-60">{label}</p>
           <p className="text-2xl font-bold tabular-nums">{formatUSD(value)}</p>
         </div>
         <button
