@@ -21,7 +21,7 @@
 // - A player with no exposed meld at the end is "burned" and pays double.
 
 import type { Card, Rank } from './types'
-import { buildDeck, shuffle } from './deck'
+import { buildDeck, shuffle } from './deck.js'
 
 export const TONGITS_SEATS = 3
 export const HAND_SIZE = 12 // non-dealer hand; the dealer gets one extra
