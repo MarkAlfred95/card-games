@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import Card from "../../Card";
 import type { Card as CardModel } from "../../../game/types";
 import type { BackKey } from "../../../cardbacks";
 import type { CSSVars } from "../../../styleVars";
+import CardSmall from "../../CardSmall";
 
 const PILE_CARD_W = "clamp(3rem, 5.5vw, 4.4rem)";
 
@@ -58,7 +58,7 @@ export function StockPile({
 									transform: `translate(${(layers - 1 - i) * 2}px, ${(layers - 1 - i) * -2}px)`,
 								}}
 							>
-								<Card faceDown back={back} />
+								<CardSmall faceDown back={back} />
 							</div>
 						))
 					)}
@@ -124,7 +124,7 @@ export function DiscardPile({
 								opacity: 0.85,
 							}}
 						>
-							<Card rank={c.rank} suit={c.suit} />
+							<CardSmall rank={c.rank} suit={c.suit} />
 						</div>
 					))}
 					<AnimatePresence>
@@ -145,7 +145,7 @@ export function DiscardPile({
 									damping: 22,
 								}}
 							>
-								<Card rank={top.rank} suit={top.suit} />
+								<CardSmall rank={top.rank} suit={top.suit} />
 							</motion.div>
 						)}
 					</AnimatePresence>

@@ -8,6 +8,7 @@ import tailwindcss from '@tailwindcss/vite'
 const GAME_APIS: [route: string, module: string][] = [
   ['/api/pusoy', '/server/pusoy.ts'],
   ['/api/lucky9', '/server/lucky9.ts'],
+  ['/api/tongits', '/server/tongits.ts'],
 ]
 
 function gameApi(): Plugin {

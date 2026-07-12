@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import Card from "../../Card";
 import type { Meld } from "../../../game/tongits";
 import type { CSSVars } from "../../../styleVars";
+import CardSmall from "../../CardSmall";
 
 // One exposed meld: an overlapping row of face-up cards. When `clickable`
 // (human act phase with cards selected) it lights up as a sapaw target.
@@ -44,7 +44,7 @@ export default function MeldGroup({
 						marginLeft: j === 0 ? 0 : "calc(var(--card-w) * -0.55)",
 					}}
 				>
-					<Card rank={c.rank} suit={c.suit} />
+					<CardSmall rank={c.rank} suit={c.suit} />
 				</motion.div>
 			))}
 		</button>
