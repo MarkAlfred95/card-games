@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import Card from "../../Card";
 import type { Card as CardModel } from "../../../game/types";
 import type { CSSVars } from "../../../styleVars";
+import CardSmall from "../../CardSmall";
 
 // The human hand: a big, nearly-flat overlapping row (reference layout).
 // Click to select (multi-select), double-click to play the current selection
@@ -45,7 +45,7 @@ export default function HandFan({
 					}}
 					className="transition-transform hover:-translate-y-2"
 				>
-					<Card
+					<CardSmall
 						rank={c.rank}
 						suit={c.suit}
 						selected={selected.has(c.id)}

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FaCrown, FaTrophy } from "react-icons/fa6";
-import Card from "../../Card";
 import type { Card as CardModel } from "../../../game/types";
 import type { BackKey } from "../../../cardbacks";
 import type { CSSVars } from "../../../styleVars";
 import { formatUSD, formatDelta } from "../../../wallet";
+import CardSmall from "../../CardSmall";
 
 // A single card that flips over to reveal itself at the end of a round: it
 // turns edge-on (scaleX → 0), swaps back → face at the midpoint, then opens
@@ -38,9 +38,9 @@ function FlipCard({
 			}}
 		>
 			{up ? (
-				<Card rank={card.rank} suit={card.suit} />
+				<CardSmall rank={card.rank} suit={card.suit} />
 			) : (
-				<Card faceDown back={back} />
+				<CardSmall faceDown back={back} />
 			)}
 		</motion.div>
 	);
@@ -64,11 +64,13 @@ export default function SeatPanel({
 	back,
 	dealKey,
 	side = "left",
+	avatar = "🤖",
 }: {
 	name: string;
 	balance: number;
 	hand: CardModel[];
-	deadwood: number;
+	// null = hidden (online opponents keep their count secret until reveal).
+	deadwood: number | null;
 	isDealer: boolean;
 	isTurn: boolean;
 	isWinner?: boolean;
@@ -79,6 +81,7 @@ export default function SeatPanel({
 	back: BackKey;
 	dealKey: number;
 	side?: "left" | "right";
+	avatar?: string;
 }) {
 	return (
 		<div
@@ -108,7 +111,7 @@ export default function SeatPanel({
 			>
 				<div className="relative mx-auto h-12 w-12 sm:h-14 sm:w-14">
 					<div className="grid h-full w-full place-items-center rounded-full border border-white/15 bg-black/40 text-2xl sm:text-3xl">
-						🤖
+						{avatar}
 					</div>
 					{isDealer && (
 						<span
@@ -137,7 +140,7 @@ export default function SeatPanel({
 						Deadwood
 					</div>
 					<div className="text-xl font-black tabular-nums text-amber-300">
-						{deadwood}
+						{deadwood ?? "—"}
 					</div>
 				</div>
 
@@ -225,7 +228,7 @@ export default function SeatPanel({
 							}}
 							style={{ marginTop }}
 						>
-							<Card faceDown back={back} />
+							<CardSmall faceDown back={back} />
 						</motion.div>
 					);
 				})}

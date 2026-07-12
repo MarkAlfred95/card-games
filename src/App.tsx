@@ -6,6 +6,7 @@ import PusoyTreseOnline from './pages/PusoyTreseOnline'
 import { AVAILABLE_GAMES } from './games'
 
 const Lucky9Online = lazy(() => import('./pages/Lucky9Online'))
+const TongitsOnline = lazy(() => import('./pages/TongitsOnline'))
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           entries, so they don't get their own home tiles. */}
       <Route path="/games/pusoy-trese/online" element={<PusoyTreseOnline />} />
       <Route path="/games/lucky-nine/online" element={<Lucky9Online />} />
+      <Route path="/games/tongits/online" element={<TongitsOnline />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
