@@ -22,7 +22,7 @@ import {
   handPoints,
   meldsWithCard,
   topDiscard,
-} from './tongits'
+} from './tongits.js'
 import type { Meld, TongitsState } from './tongits'
 
 export type BotDrawDecision =
