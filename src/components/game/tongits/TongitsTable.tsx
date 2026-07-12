@@ -35,6 +35,8 @@ export default function TongitsTable({
 	onTakeDiscard,
 	sortMode,
 	onSortChange,
+	deadwoods,
+	avatars,
 }: {
 	state: TongitsState;
 	names: string[];
@@ -52,6 +54,10 @@ export default function TongitsTable({
 	onTakeDiscard?: () => void;
 	sortMode: SortMode;
 	onSortChange: (mode: SortMode) => void;
+	// Per-seat overrides for online play: null hides a seat's live deadwood,
+	// and avatars distinguish humans from bots.
+	deadwoods?: (number | null)[];
+	avatars?: string[];
 }) {
 	const res = state.result;
 
@@ -59,9 +65,12 @@ export default function TongitsTable({
 		name: names[s],
 		balance: balances[s],
 		hand: state.players[s].hand,
-		deadwood: reveal
-			? (res?.points[s] ?? 0)
-			: handPoints(state.players[s].hand),
+		deadwood: deadwoods
+			? deadwoods[s]
+			: reveal
+				? (res?.points[s] ?? 0)
+				: handPoints(state.players[s].hand),
+		avatar: avatars?.[s],
 		isDealer: state.dealer === s,
 		isTurn: !res && state.turn === s,
 		isWinner: reveal && res?.winner === s,

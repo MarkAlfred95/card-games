@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FaCrown } from "react-icons/fa6";
-import Card from "../../Card";
 import type { Card as CardModel } from "../../../game/types";
 import type { BackKey } from "../../../cardbacks";
 import type { CSSVars } from "../../../styleVars";
 import { formatUSD, formatDelta } from "../../../wallet";
+import CardSmall from "../../CardSmall";
 
 // A single card that flips over to reveal itself (same approach as the Pusoy
 // Trese seat): it turns edge-on (scaleX → 0), swaps from its back to its face
@@ -38,9 +38,9 @@ function FlipCard({
 			}}
 		>
 			{up ? (
-				<Card rank={card.rank} suit={card.suit} />
+				<CardSmall rank={card.rank} suit={card.suit} />
 			) : (
-				<Card faceDown back={back} />
+				<CardSmall faceDown back={back} />
 			)}
 		</motion.div>
 	);
@@ -163,13 +163,13 @@ export default function Seat({
 							}}
 						>
 							{showFaces ? (
-								<Card
+								<CardSmall
 									rank={c.rank}
 									suit={c.suit}
 									style={{ width: "var(--card-w)" }}
 								/>
 							) : (
-								<Card faceDown back={back} />
+								<CardSmall faceDown back={back} />
 							)}
 						</motion.div>
 					);

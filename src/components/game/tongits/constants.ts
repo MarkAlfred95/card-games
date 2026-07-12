@@ -10,3 +10,7 @@ export const BET_OPTIONS = [5, 10, 25, 50, 100, 250];
 
 // Hand-fan display orders, shared by the page and the table's sort rail.
 export type SortMode = "auto" | "rank-asc" | "rank-desc" | "suit";
+
+// Starting bankroll for every seat in an online room (the server seeds it;
+// clients use it for net-earnings standings at game over).
+export const ONLINE_START_BALANCE = 1000;
