@@ -32,6 +32,8 @@ import { speak, speakAfter, stopVoice } from "../voice";
 import { playSfx } from "../sfx";
 import { useAudioSettings } from "../audioPrefs";
 import { useWallet, formatUSD, formatDelta, formatCompactUSD } from "../wallet";
+import { DIVISIONS, divisionFor, divisionsUpTo } from "../divisions";
+import type { Division } from "../divisions";
 import { Header, GameShell } from "../components/game/pusoy-trese";
 import {
 	TongitsTable,
@@ -58,10 +60,10 @@ const SUIT_ORDER: Record<string, number> = { S: 0, H: 1, C: 2, D: 3 };
 const ACTION_BTN =
 	"flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wide transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-6 sm:text-sm";
 
-// Random starting bankroll for a bot: $500–$2500 in $50 steps (same spread
-// as the other games).
-function botBalance(): number {
-	return 500 + Math.round(Math.random() * 40) * 50;
+// Random starting bankroll for a bot: $500–$2500 in $50 steps, scaled to the
+// spending division's factor (same spread as the other games).
+function botBalance(factor: number): number {
+	return (500 + Math.round(Math.random() * 40) * 50) * factor;
 }
 
 const byRank = (a: CardModel, b: CardModel) =>
@@ -87,6 +89,9 @@ function sortForDisplay(hand: CardModel[], mode: SortMode): CardModel[] {
 				...[...arranged.deadwood].sort((a, b) => byRank(b, a)),
 			];
 		}
+		// Player-dragged arrangement: the order lives in `handOrder` state.
+		case "custom":
+			return [...hand];
 	}
 }
 
@@ -101,11 +106,16 @@ export default function Tongits() {
 	}, []);
 
 	const [phase, setPhase] = useState<Phase>("setup");
+	// Base stake option; the effective per-round stake is `bet * factor`.
 	const [bet, setBet] = useState<number>(BET_OPTIONS[2]);
 	const [round, setRound] = useState(1);
 	const [game, setGame] = useState<TongitsState | null>(null);
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [sortMode, setSortMode] = useState<SortMode>("auto");
+	// Display order of the hand (card ids). Presets rewrite it on every hand
+	// change; once the player drags a card (sortMode "custom") it only
+	// reconciles — removed cards drop out, drawn cards append on the right.
+	const [handOrder, setHandOrder] = useState<string[]>([]);
 	const [botBalances, setBotBalances] = useState<number[]>([0, 0, 0]);
 	const [startBalances, setStartBalances] = useState<number[]>([0, 0, 0]);
 	const [toasts, setToasts] = useState<Toast[]>([]);
@@ -114,6 +124,42 @@ export default function Tongits() {
 	const [dealKey, setDealKey] = useState(0);
 	const appliedResult = useRef(false);
 	const toastSeq = useRef(0);
+
+	// Chosen spending division. Locked for the duration of a match; on the
+	// setup screen the player can switch to any division they can afford.
+	const [division, setDivision] = useState<Division>(() =>
+		divisionFor(wallet.balance),
+	);
+	const factor = division.factor;
+
+	// While in the lobby, drop the selection back to the natural division if
+	// the balance can no longer afford the one that was picked. Guarded to
+	// `setup` so a mid-match balance swing never changes the locked division.
+	useEffect(() => {
+		if (phase === "setup" && wallet.balance < division.min)
+			setDivision(divisionFor(wallet.balance));
+	}, [phase, wallet.balance, division.min]);
+
+	// Keep the picked stake affordable when the division (or balance) changes:
+	// fall back to the largest option the balance covers at this factor.
+	useEffect(() => {
+		if (phase !== "setup" || wallet.balance >= bet * factor) return;
+		const best = [...BET_OPTIONS]
+			.reverse()
+			.find((b) => b * factor <= wallet.balance);
+		setBet(best ?? BET_OPTIONS[0]);
+	}, [phase, wallet.balance, bet, factor]);
+
+	// Announce when a higher spending division unlocks (seen on the setup
+	// screen). The first visit is recorded silently.
+	const knownDivisions = useRef<number | null>(null);
+	useEffect(() => {
+		if (phase !== "setup") return;
+		const n = divisionsUpTo(wallet.balance).length;
+		if (knownDivisions.current !== null && n > knownDivisions.current)
+			speakAfter("divisionUp");
+		knownDivisions.current = n;
+	}, [phase, wallet.balance]);
 
 	const names = useMemo(() => ["You", "Bot 1", "Bot 2"], []);
 	const balances = useMemo(
@@ -148,10 +194,36 @@ export default function Tongits() {
 		() => game?.players[HUMAN].hand ?? [],
 		[game],
 	);
-	const displayHand = useMemo(
-		() => sortForDisplay(hand, sortMode),
-		[hand, sortMode],
-	);
+
+	// Keep the display order in step with the hand: presets re-sort on every
+	// change (auto regroup); a custom arrangement is only reconciled.
+	useEffect(() => {
+		setHandOrder((prev) => {
+			if (sortMode !== "custom")
+				return sortForDisplay(hand, sortMode).map((c) => c.id);
+			const ids = new Set(hand.map((c) => c.id));
+			const kept = prev.filter((id) => ids.has(id));
+			const keptSet = new Set(kept);
+			return [
+				...kept,
+				...hand.filter((c) => !keptSet.has(c.id)).map((c) => c.id),
+			];
+		});
+	}, [hand, sortMode]);
+
+	const displayHand = useMemo(() => {
+		const byId = new Map(hand.map((c) => [c.id, c]));
+		const ordered = handOrder
+			.map((id) => byId.get(id))
+			.filter((c): c is CardModel => Boolean(c));
+		// The order state lags the hand by one effect tick — patch the gap so
+		// a freshly drawn card never disappears for a frame.
+		if (ordered.length !== hand.length) {
+			const seen = new Set(ordered.map((c) => c.id));
+			ordered.push(...hand.filter((c) => !seen.has(c.id)));
+		}
+		return ordered;
+	}, [hand, handOrder]);
 	const selCards = useMemo(
 		() => hand.filter((c) => selected.has(c.id)),
 		[hand, selected],
@@ -205,8 +277,12 @@ export default function Tongits() {
 	// --- Match flow -------------------------------------------------------------
 
 	function startRound(r: number) {
-		setGame(createRound((r - 1) % SEATS, bet));
+		setGame(createRound((r - 1) % SEATS, bet * factor));
 		setSelected(new Set());
+		// A dragged arrangement is meaningless for a fresh hand — fall back to
+		// auto-grouping; kept presets re-apply via the order effect.
+		setSortMode((m) => (m === "custom" ? "auto" : m));
+		setHandOrder([]);
 		setFightPrompt(null);
 		appliedResult.current = false;
 		setDealKey((k) => k + 1);
@@ -219,7 +295,7 @@ export default function Tongits() {
 
 	function beginMatch() {
 		playSfx("button_click");
-		const bb = [0, botBalance(), botBalance()];
+		const bb = [0, botBalance(factor), botBalance(factor)];
 		setBotBalances(bb);
 		setStartBalances([wallet.balance, bb[1], bb[2]]);
 		setRound(1);
@@ -258,6 +334,27 @@ export default function Tongits() {
 		});
 	}
 
+	// Drag rearrangement: move a card next to another (or to the end), and
+	// switch to the custom order so nothing re-sorts it away.
+	function reorderHand(activeId: string, overId: string | null) {
+		if (!game || game.result) return;
+		setSortMode("custom");
+		setHandOrder((prev) => {
+			const base = prev.length ? prev : displayHand.map((c) => c.id);
+			const from = base.indexOf(activeId);
+			if (from < 0) return prev;
+			const without = base.filter((id) => id !== activeId);
+			if (overId === null) return [...without, activeId];
+			const to = without.indexOf(overId);
+			if (to < 0) return prev;
+			// Moving right lands after the target, moving left before it —
+			// the card ends up where the drop indicator pointed.
+			const insertAt = from < base.indexOf(overId) ? to + 1 : to;
+			without.splice(insertAt, 0, activeId);
+			return without;
+		});
+	}
+
 	function doDrawStock() {
 		if (!game || !canDrawNow) return;
 		if (tryAction(() => drawFromStock(game))) playSfx("card_flip");
@@ -277,19 +374,17 @@ export default function Tongits() {
 		}
 	}
 
-	function doMeld() {
+	// Lay a specific set of cards (a dragged-together group, or the selection).
+	function doMeldCards(ids: string[]) {
 		if (!game || !canActNow) return;
-		if (
-			tryAction(() =>
-				layMeld(
-					game,
-					selCards.map((c) => c.id),
-				),
-			)
-		) {
+		if (tryAction(() => layMeld(game, ids))) {
 			playSfx("card_drop");
 			setSelected(new Set());
 		}
+	}
+
+	function doMeld() {
+		doMeldCards(selCards.map((c) => c.id));
 	}
 
 	function doSapaw(meldId?: number) {
@@ -444,15 +539,17 @@ export default function Tongits() {
 		}, 450);
 		speakAfter(
 			delta > 0
-				? delta >= bet * 4
+				? delta >= bet * factor * 4
 					? "roundWinBig"
 					: "roundWin"
 				: delta < 0
-					? -delta >= bet * 4
+					? -delta >= bet * factor * 4
 						? "roundLossBig"
 						: "roundLoss"
 					: "roundPush",
-			delta < 0 && wallet.balance + delta < BET_OPTIONS[0] && "broke",
+			delta < 0 &&
+				wallet.balance + delta < BET_OPTIONS[0] * factor &&
+				"broke",
 		);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [game]);
@@ -489,7 +586,9 @@ export default function Tongits() {
 			themeOptions={themeOptions}
 			backOptions={backOptions}
 			balance={wallet.balance}
-			division={phase === "setup" ? undefined : formatCompactUSD(bet)}
+			division={
+				phase === "setup" ? undefined : formatCompactUSD(division.unit)
+			}
 			{...audio}
 		/>
 	);
@@ -498,6 +597,21 @@ export default function Tongits() {
 	// --- Setup screen -------------------------------------------------------------
 
 	if (phase === "setup") {
+		// Show every affordable division plus the next locked one, to tease
+		// progression. Locked entries are disabled.
+		const affordable = divisionsUpTo(wallet.balance);
+		const shownDivisions = DIVISIONS.slice(
+			0,
+			Math.min(affordable.length + 1, DIVISIONS.length),
+		);
+		const divisionRange = (d: Division) => {
+			if (d.level === 0) return `Under ${formatCompactUSD(10000)}`;
+			const next = DIVISIONS[d.level + 1];
+			return next
+				? `${formatCompactUSD(d.min)} – ${formatCompactUSD(next.min)}`
+				: `${formatCompactUSD(d.min)}+`;
+		};
+
 		return (
 			<GameShell themeClass={shellClass} header={header}>
 				<AmbientGlow />
@@ -535,6 +649,76 @@ export default function Tongits() {
 							</div>
 						</div>
 
+						{/* Spending division selector */}
+						<div className="mt-6">
+							<div className="flex items-baseline justify-between gap-2">
+								<h3 className="text-sm font-semibold uppercase tracking-wide opacity-80">
+									Spending division
+								</h3>
+								<span className="text-xs opacity-60">
+									Stakes ×{factor} ·{" "}
+									{formatCompactUSD(division.unit)}
+								</span>
+							</div>
+							<p className="mt-1 text-xs leading-tight opacity-60">
+								Play at your level or drop to a lower one. Reach
+								the next tier's balance to unlock it.
+							</p>
+							<div className="mt-3 flex flex-col gap-3 sm:grid sm:grid-cols-2">
+								{shownDivisions.map((d) => {
+									const locked = wallet.balance < d.min;
+									const active = d.level === division.level;
+									return (
+										<button
+											key={d.level}
+											onClick={() =>
+												!locked && setDivision(d)
+											}
+											disabled={locked}
+											className={`rounded-xl p-3 text-left ring-2 transition ${
+												active
+													? "bg-amber-400/15 ring-amber-400/60"
+													: locked
+														? "cursor-not-allowed bg-white/[0.03] opacity-50 ring-white/10"
+														: "bg-white/5 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
+											}`}
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span className="text-sm font-bold">
+													{formatCompactUSD(d.unit)} ·{" "}
+													{d.name}
+												</span>
+												{active ? (
+													<span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-900">
+														Selected
+													</span>
+												) : locked ? (
+													<span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide opacity-80">
+														Reach{" "}
+														{formatCompactUSD(
+															d.min,
+														)}
+													</span>
+												) : null}
+											</div>
+											<p className="mt-1 text-xs opacity-70">
+												{divisionRange(d)} · stakes{" "}
+												{formatCompactUSD(
+													BET_OPTIONS[0] * d.factor,
+												)}
+												–
+												{formatCompactUSD(
+													BET_OPTIONS[
+														BET_OPTIONS.length - 1
+													] * d.factor,
+												)}
+											</p>
+										</button>
+									);
+								})}
+							</div>
+						</div>
+
 						{/* Stake selector */}
 						<div className="mt-6">
 							<div className="flex items-baseline justify-between gap-2">
@@ -552,7 +736,7 @@ export default function Tongits() {
 							</p>
 							<div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
 								{BET_OPTIONS.map((b) => {
-									const locked = wallet.balance < b;
+									const locked = wallet.balance < b * factor;
 									const active = bet === b;
 									return (
 										<button
@@ -571,7 +755,7 @@ export default function Tongits() {
 														: "bg-white/5 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
 											}`}
 										>
-											{formatUSD(b)}
+											{formatCompactUSD(b * factor)}
 										</button>
 									);
 								})}
@@ -610,7 +794,7 @@ export default function Tongits() {
 
 						<button
 							onClick={beginMatch}
-							disabled={wallet.balance < bet}
+							disabled={wallet.balance < bet * factor}
 							className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
 						>
 							Start match <LuArrowRight className="h-4 w-4" />
@@ -875,9 +1059,14 @@ export default function Tongits() {
 									cards={displayHand}
 									selected={selected}
 									onToggle={toggleSelect}
-									onPlayMeld={() =>
-										canActNow && meldValid && doMeld()
+									onPlayMeld={(ids) =>
+										ids
+											? doMeldCards(ids)
+											: canActNow &&
+												meldValid &&
+												doMeld()
 									}
+									onReorder={reorderHand}
 									dealKey={dealKey}
 								/>
 							)}

@@ -155,6 +155,10 @@ function sortForDisplay(hand: CardModel[], mode: SortMode): CardModel[] {
 				...[...arranged.deadwood].sort((a, b) => byRank(b, a)),
 			];
 		}
+		// Online keeps preset sorting only; "custom" (solo drag order) never
+		// reaches here, but the union includes it.
+		case "custom":
+			return [...hand];
 	}
 }
 
