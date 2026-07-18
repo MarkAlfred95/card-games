@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
 	LuArrowRight,
+	LuChevronUp,
 	LuCopy,
 	LuFlag,
 	LuGlobe,
@@ -248,6 +249,25 @@ export default function TongitsOnline() {
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [sortMode, setSortMode] = useState<SortMode>("auto");
 	const [dealKey, setDealKey] = useState(0);
+
+	// Below lg the hand + actions float as a collapsible bottom sheet (Pusoy
+	// Trese-style) so the board never needs scrolling to reach the piles.
+	const [handOpen, setHandOpen] = useState(true);
+	const [isDesktop, setIsDesktop] = useState(
+		() => window.matchMedia("(min-width: 1024px)").matches,
+	);
+	useEffect(() => {
+		const mq = window.matchMedia("(min-width: 1024px)");
+		const update = () => setIsDesktop(mq.matches);
+		// Some embedded browsers resize without firing the media-query change
+		// event, so listen to plain resizes as well.
+		mq.addEventListener("change", update);
+		window.addEventListener("resize", update);
+		return () => {
+			mq.removeEventListener("change", update);
+			window.removeEventListener("resize", update);
+		};
+	}, []);
 
 	const leaveRoom = useCallback(() => {
 		localStorage.removeItem(SESSION_KEY);
@@ -983,9 +1003,126 @@ export default function TongitsOnline() {
 					: "Draw a card from the Draw Pile, then meld or add to melds, then discard 1 card"
 				: "Lay melds or sapaw the table, then discard one card";
 
+	// Pieces shared by the desktop inline layout and the mobile bottom sheet.
+	const handFan = hand.length > 0 && (
+		<HandFan
+			cards={displayHand}
+			selected={selected}
+			onToggle={toggleSelect}
+			onPlayMeld={() => canActNow && meldValid && doMeld()}
+			dealKey={dealKey}
+		/>
+	);
+
+	const sortButtons = (
+		<div className="flex gap-1 rounded-lg bg-black/20 p-1 text-xs">
+			{(
+				[
+					["auto", "Auto"],
+					["rank-asc", "Rank ↑"],
+					["rank-desc", "Rank ↓"],
+					["suit", "Suits"],
+				] as [SortMode, string][]
+			).map(([k, label]) => (
+				<button
+					key={k}
+					onClick={() => {
+						playSfx("button_click");
+						setSortMode(k);
+					}}
+					className={`rounded-md px-2.5 py-1.5 font-medium transition ${
+						sortMode === k
+							? "bg-white/90 text-slate-900"
+							: "text-white/80 hover:bg-white/10"
+					}`}
+				>
+					{label}
+				</button>
+			))}
+		</div>
+	);
+
+	const actionButtons = (
+		<div className="flex flex-wrap items-center justify-center gap-2">
+			{selected.size > 0 && (
+				<button
+					onClick={() => {
+						playSfx("button_click");
+						setSelected(new Set());
+					}}
+					className="flex items-center gap-1 rounded-lg bg-black/25 px-3 py-2.5 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
+				>
+					<LuX className="h-3.5 w-3.5" /> Clear ({selected.size})
+				</button>
+			)}
+			<button
+				onClick={doDrawStock}
+				disabled={!canDrawNow || state.stock.length === 0 || busy}
+				className={`${ACTION_BTN} bg-violet-400/25 ring-1 ring-violet-400/60 hover:bg-violet-400/40`}
+			>
+				Draw
+			</button>
+			<button
+				onClick={doMeld}
+				disabled={!canActNow || !meldValid || busy}
+				className={`${ACTION_BTN} bg-gradient-to-b from-amber-300 to-amber-500 text-slate-900 shadow-lg shadow-amber-500/20 hover:brightness-110 disabled:hover:brightness-100`}
+			>
+				Meld
+			</button>
+			<button
+				onClick={() => doSapaw()}
+				disabled={!canActNow || sapawTargets.size === 0 || busy}
+				className={`${ACTION_BTN} bg-sky-400/20 ring-1 ring-sky-400/50 hover:bg-sky-400/30`}
+			>
+				Sapaw
+			</button>
+			<button
+				onClick={doDiscard}
+				disabled={!canActNow || selCards.length !== 1 || busy}
+				className={`${ACTION_BTN} bg-red-400/20 ring-1 ring-red-400/50 hover:bg-red-400/30`}
+			>
+				Discard
+			</button>
+			<button
+				onClick={doCallDraw}
+				disabled={!drawCallable || busy}
+				className={`${ACTION_BTN} bg-white/10 ring-1 ring-white/30 hover:bg-white/20`}
+			>
+				<LuFlag className="h-3.5 w-3.5" /> Call Draw
+			</button>
+		</div>
+	);
+
+	const revealFooter = res && (
+		<div className="flex flex-col items-center gap-2 py-1">
+			<div className="text-center text-sm font-bold text-amber-300">
+				{headline}
+			</div>
+			<button
+				onClick={() => {
+					playSfx("button_click");
+					act("next");
+				}}
+				disabled={busy}
+				style={{
+					animation:
+						"popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s both",
+				}}
+				className="flex items-center gap-1.5 rounded-xl bg-amber-400 px-6 py-2.5 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-amber-300 disabled:opacity-40"
+			>
+				{view.round >= view.totalRounds ? "Final standings" : "Next round"}
+				<LuArrowRight className="h-4 w-4" />
+			</button>
+		</div>
+	);
+
 	return (
 		<GameShell themeClass={shellClass} header={header}>
-			<div className="flex flex-1 flex-col p-2 sm:p-4">
+			<div
+				className={`flex flex-1 flex-col p-2 sm:p-4 ${
+					isDesktop ? "" : "pb-16"
+				}`}
+			>
 				{error && <div className="mb-2">{errorBar}</div>}
 
 				{/* Host can end the room mid-match; others can bail out. */}
@@ -1060,6 +1197,10 @@ export default function TongitsOnline() {
 						avatars={avatars}
 					/>
 
+					{/* Desktop keeps the hand + actions inline under the
+					    board; small screens get the bottom sheet instead. */}
+					{isDesktop && (
+					<>
 					{/* You: avatar panel + big hand row */}
 					<div className="mt-4 flex flex-col items-center gap-2 lg:flex-row lg:items-center lg:gap-4">
 						<motion.div
@@ -1140,19 +1281,7 @@ export default function TongitsOnline() {
 							</div>
 						</motion.div>
 
-						<div className="min-w-0 flex-1">
-							{hand.length > 0 && (
-								<HandFan
-									cards={displayHand}
-									selected={selected}
-									onToggle={toggleSelect}
-									onPlayMeld={() =>
-										canActNow && meldValid && doMeld()
-									}
-									dealKey={dealKey}
-								/>
-							)}
-						</div>
+						<div className="min-w-0 flex-1">{handFan}</div>
 
 						{/* Mirrors the avatar panel so the hand stays centered */}
 						<div className="hidden w-44 shrink-0 lg:block" />
@@ -1161,28 +1290,7 @@ export default function TongitsOnline() {
 					{/* Action bar */}
 					<div className="mt-3 border-t border-white/10 pt-3">
 						{res ? (
-							<div className="flex flex-col items-center gap-2 py-1">
-								<div className="text-center text-sm font-bold text-amber-300">
-									{headline}
-								</div>
-								<button
-									onClick={() => {
-										playSfx("button_click");
-										act("next");
-									}}
-									disabled={busy}
-									style={{
-										animation:
-											"popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s both",
-									}}
-									className="flex items-center gap-1.5 rounded-xl bg-amber-400 px-6 py-2.5 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-amber-300 disabled:opacity-40"
-								>
-									{view.round >= view.totalRounds
-										? "Final standings"
-										: "Next round"}
-									<LuArrowRight className="h-4 w-4" />
-								</button>
-							</div>
+							revealFooter
 						) : (
 							<div className="flex flex-col items-center gap-2.5">
 								<p
@@ -1194,102 +1302,166 @@ export default function TongitsOnline() {
 								>
 									{hint}
 								</p>
-								<div className="flex flex-wrap items-center justify-center gap-2">
-									<div className="flex gap-1 rounded-lg bg-black/20 p-1 text-xs lg:hidden">
-										{(
-											[
-												["auto", "Auto"],
-												["rank-asc", "Rank ↑"],
-												["rank-desc", "Rank ↓"],
-												["suit", "Suits"],
-											] as [SortMode, string][]
-										).map(([k, label]) => (
-											<button
-												key={k}
-												onClick={() => {
-													playSfx("button_click");
-													setSortMode(k);
-												}}
-												className={`rounded-md px-2.5 py-1.5 font-medium transition ${
-													sortMode === k
-														? "bg-white/90 text-slate-900"
-														: "text-white/80 hover:bg-white/10"
-												}`}
-											>
-												{label}
-											</button>
-										))}
-									</div>
-
-									{selected.size > 0 && (
-										<button
-											onClick={() => {
-												playSfx("button_click");
-												setSelected(new Set());
-											}}
-											className="flex items-center gap-1 rounded-lg bg-black/25 px-3 py-2.5 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
-										>
-											<LuX className="h-3.5 w-3.5" />{" "}
-											Clear ({selected.size})
-										</button>
-									)}
-
-									<button
-										onClick={doDrawStock}
-										disabled={
-											!canDrawNow ||
-											state.stock.length === 0 ||
-											busy
-										}
-										className={`${ACTION_BTN} bg-violet-400/25 ring-1 ring-violet-400/60 hover:bg-violet-400/40`}
-									>
-										Draw
-									</button>
-									<button
-										onClick={doMeld}
-										disabled={
-											!canActNow || !meldValid || busy
-										}
-										className={`${ACTION_BTN} bg-gradient-to-b from-amber-300 to-amber-500 text-slate-900 shadow-lg shadow-amber-500/20 hover:brightness-110 disabled:hover:brightness-100`}
-									>
-										Meld
-									</button>
-									<button
-										onClick={() => doSapaw()}
-										disabled={
-											!canActNow ||
-											sapawTargets.size === 0 ||
-											busy
-										}
-										className={`${ACTION_BTN} bg-sky-400/20 ring-1 ring-sky-400/50 hover:bg-sky-400/30`}
-									>
-										Sapaw
-									</button>
-									<button
-										onClick={doDiscard}
-										disabled={
-											!canActNow ||
-											selCards.length !== 1 ||
-											busy
-										}
-										className={`${ACTION_BTN} bg-red-400/20 ring-1 ring-red-400/50 hover:bg-red-400/30`}
-									>
-										Discard
-									</button>
-									<button
-										onClick={doCallDraw}
-										disabled={!drawCallable || busy}
-										className={`${ACTION_BTN} bg-white/10 ring-1 ring-white/30 hover:bg-white/20`}
-									>
-										<LuFlag className="h-3.5 w-3.5" /> Call
-										Draw
-									</button>
-								</div>
+								{actionButtons}
 							</div>
 						)}
 					</div>
+					</>
+					)}
 				</div>
 			</div>
+
+			{/* Mobile: your hand + actions float as a collapsible bottom sheet
+			    over the board (Pusoy Trese-style), so the piles, melds, and
+			    seats stay visible behind it with no scrolling. */}
+			{!isDesktop &&
+				(handOpen ? (
+					<div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-2">
+						<div
+							className="flex max-h-[80dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/15 shadow-2xl backdrop-blur"
+							style={{
+								backgroundColor:
+									"color-mix(in srgb, var(--table-felt-2) 92%, black)",
+							}}
+						>
+							{/* Sheet header: your info + collapse */}
+							<div className="flex flex-col gap-2 border-b border-white/10 p-3">
+								<div className="flex items-center justify-between gap-2">
+									<span className="flex min-w-0 items-center gap-2.5">
+										<span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-black/40 text-lg">
+											😎
+											{state.dealer === 0 && (
+												<span
+													className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-400"
+													title="Dealer"
+												>
+													<FaCrown className="h-2.5 w-2.5 text-slate-900" />
+												</span>
+											)}
+										</span>
+										<span className="min-w-0 leading-tight">
+											<span className="flex items-center gap-1.5 text-sm font-semibold">
+												Your hand
+												{humanWon && (
+													<FaTrophy className="h-3.5 w-3.5 text-amber-400" />
+												)}
+												{reveal &&
+													res?.burned[0] &&
+													!humanWon && (
+														<span className="rounded bg-red-500/80 px-1 text-[9px] font-bold uppercase tracking-wide">
+															Burned
+														</span>
+													)}
+											</span>
+											<span className="block text-[11px] tabular-nums opacity-75">
+												{formatUSD(yourBalance)} ·{" "}
+												{hand.length} cards · deadwood{" "}
+												<b className="text-amber-300">
+													{reveal
+														? res?.points[0]
+														: handPoints(hand)}
+												</b>
+												{reveal && (
+													<b
+														className={`ml-1.5 ${
+															(res
+																?.moneyDeltas[0] ??
+																0) > 0
+																? "text-emerald-300"
+																: (res
+																			?.moneyDeltas[0] ??
+																			0) <
+																	  0
+																	? "text-red-300"
+																	: "opacity-60"
+														}`}
+													>
+														{formatDelta(
+															res
+																?.moneyDeltas[0] ??
+																0,
+														)}
+													</b>
+												)}
+											</span>
+										</span>
+									</span>
+									<button
+										onClick={() => {
+											playSfx("button_click");
+											setHandOpen(false);
+										}}
+										className="flex items-center rounded-lg bg-black/25 p-2 text-xs font-medium ring-1 ring-white/10 transition hover:bg-black/35"
+									>
+										<LuX className="h-4 w-4" />
+									</button>
+								</div>
+								{/* Status strip */}
+								<div
+									className={`rounded-lg px-3 py-2 text-xs font-medium ${
+										res
+											? "bg-amber-400/90 text-slate-900"
+											: isYourTurn && !fightOpen
+												? "bg-emerald-500/85 text-white"
+												: "bg-white/15"
+									}`}
+								>
+									{res ? headline : hint}
+								</div>
+							</div>
+
+							{/* Hand */}
+							<div className="overflow-x-auto overflow-y-auto px-1">
+								{handFan}
+							</div>
+
+							{/* Actions */}
+							<div className="border-t border-white/10 p-3">
+								{res ? (
+									revealFooter
+								) : (
+									<div className="flex flex-col items-center gap-2">
+										{sortButtons}
+										{actionButtons}
+									</div>
+								)}
+							</div>
+						</div>
+					</div>
+				) : (
+					<button
+						onClick={() => {
+							playSfx("button_click");
+							setHandOpen(true);
+						}}
+						className={`fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-t-2xl border-t px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur ${
+							isYourTurn && !res && !fightOpen
+								? "border-emerald-400/60 text-emerald-300"
+								: "border-white/15"
+						}`}
+						style={{
+							backgroundColor:
+								"color-mix(in srgb, var(--table-felt-2) 92%, black)",
+						}}
+					>
+						<LuChevronUp className="h-4 w-4" />
+						Your hand
+						<span className="opacity-60">
+							· {hand.length} cards
+						</span>
+						{!res && isYourTurn && !fightOpen && (
+							<span
+								className="rounded-full bg-emerald-400/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-900"
+								style={{
+									animation:
+										"winnerPulse 1.6s ease-in-out infinite",
+								}}
+							>
+								Your turn
+							</span>
+						)}
+					</button>
+				))}
 
 			{/* Fight prompt: someone called Draw and your vote is pending */}
 			<AnimatePresence>
