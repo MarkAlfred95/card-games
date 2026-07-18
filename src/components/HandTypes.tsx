@@ -1,4 +1,4 @@
-import Card from "./Card";
+import CardSmall from "./CardSmall";
 
 interface HandTypesProps {
 	open?: boolean;
@@ -78,11 +78,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="6" suit="H" />
-						<Card rank="7" suit="H" />
-						<Card rank="8" suit="H" />
-						<Card rank="9" suit="H" />
-						<Card rank="10" suit="H" />
+						<CardSmall rank="6" suit="H" />
+						<CardSmall rank="7" suit="H" />
+						<CardSmall rank="8" suit="H" />
+						<CardSmall rank="9" suit="H" />
+						<CardSmall rank="10" suit="H" />
 					</div>
 				</div>
 
@@ -100,11 +100,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="9" suit="S" />
-						<Card rank="9" suit="H" />
-						<Card rank="9" suit="D" />
-						<Card rank="9" suit="C" />
-						<Card rank="K" suit="S" />
+						<CardSmall rank="9" suit="S" />
+						<CardSmall rank="9" suit="H" />
+						<CardSmall rank="9" suit="D" />
+						<CardSmall rank="9" suit="C" />
+						<CardSmall rank="K" suit="S" />
 					</div>
 				</div>
 
@@ -122,11 +122,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="10" suit="S" />
-						<Card rank="10" suit="H" />
-						<Card rank="10" suit="D" />
-						<Card rank="4" suit="C" />
-						<Card rank="4" suit="H" />
+						<CardSmall rank="10" suit="S" />
+						<CardSmall rank="10" suit="H" />
+						<CardSmall rank="10" suit="D" />
+						<CardSmall rank="4" suit="C" />
+						<CardSmall rank="4" suit="H" />
 					</div>
 				</div>
 
@@ -144,11 +144,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="A" suit="D" />
-						<Card rank="J" suit="D" />
-						<Card rank="8" suit="D" />
-						<Card rank="5" suit="D" />
-						<Card rank="2" suit="D" />
+						<CardSmall rank="A" suit="D" />
+						<CardSmall rank="J" suit="D" />
+						<CardSmall rank="8" suit="D" />
+						<CardSmall rank="5" suit="D" />
+						<CardSmall rank="2" suit="D" />
 					</div>
 				</div>
 
@@ -166,11 +166,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="5" suit="S" />
-						<Card rank="6" suit="H" />
-						<Card rank="7" suit="D" />
-						<Card rank="8" suit="C" />
-						<Card rank="9" suit="S" />
+						<CardSmall rank="5" suit="S" />
+						<CardSmall rank="6" suit="H" />
+						<CardSmall rank="7" suit="D" />
+						<CardSmall rank="8" suit="C" />
+						<CardSmall rank="9" suit="S" />
 					</div>
 				</div>
 
@@ -188,11 +188,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="7" suit="S" />
-						<Card rank="7" suit="H" />
-						<Card rank="7" suit="C" />
-						<Card rank="K" suit="D" />
-						<Card rank="2" suit="H" />
+						<CardSmall rank="7" suit="S" />
+						<CardSmall rank="7" suit="H" />
+						<CardSmall rank="7" suit="C" />
+						<CardSmall rank="K" suit="D" />
+						<CardSmall rank="2" suit="H" />
 					</div>
 				</div>
 
@@ -210,11 +210,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="Q" suit="S" />
-						<Card rank="Q" suit="H" />
-						<Card rank="8" suit="D" />
-						<Card rank="8" suit="C" />
-						<Card rank="3" suit="S" />
+						<CardSmall rank="Q" suit="S" />
+						<CardSmall rank="Q" suit="H" />
+						<CardSmall rank="8" suit="D" />
+						<CardSmall rank="8" suit="C" />
+						<CardSmall rank="3" suit="S" />
 					</div>
 				</div>
 
@@ -232,11 +232,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="J" suit="S" />
-						<Card rank="J" suit="D" />
-						<Card rank="9" suit="H" />
-						<Card rank="5" suit="C" />
-						<Card rank="2" suit="S" />
+						<CardSmall rank="J" suit="S" />
+						<CardSmall rank="J" suit="D" />
+						<CardSmall rank="9" suit="H" />
+						<CardSmall rank="5" suit="C" />
+						<CardSmall rank="2" suit="S" />
 					</div>
 				</div>
 
@@ -254,11 +254,11 @@ function HandTypes({ open = true }: HandTypesProps) {
 						</div>
 					</div>
 					<div className="w-full mt-3 flex gap-1">
-						<Card rank="A" suit="S" />
-						<Card rank="10" suit="H" />
-						<Card rank="7" suit="C" />
-						<Card rank="4" suit="D" />
-						<Card rank="2" suit="S" />
+						<CardSmall rank="A" suit="S" />
+						<CardSmall rank="10" suit="H" />
+						<CardSmall rank="7" suit="C" />
+						<CardSmall rank="4" suit="D" />
+						<CardSmall rank="2" suit="S" />
 					</div>
 				</div>
 			</div>
