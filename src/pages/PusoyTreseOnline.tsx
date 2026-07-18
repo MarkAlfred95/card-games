@@ -21,7 +21,6 @@ import { buildDeck, RANKS } from "../game/deck";
 import { evaluate, compareHands } from "../game/ranking";
 import { detectNatural } from "../game/naturals";
 import type { Arrangement, Card as CardModel } from "../game/types";
-import Card from "../components/Card";
 import DropZone from "../components/DropZone";
 import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
@@ -42,6 +41,7 @@ import { speak, speakAfter, stopVoice, NATURAL_CUES } from "../voice";
 import type { VoiceCue } from "../voice";
 import { playSfx } from "../sfx";
 import type { SfxKey } from "../sfx";
+import CardSmall from "../components/CardSmall";
 
 // --- Server view types (mirrors server/pusoy.ts viewFor) ---------------------
 
@@ -1076,7 +1076,7 @@ export default function PusoyTreseOnline() {
 
 				<DragOverlay>
 					{activeCard ? (
-						<Card
+						<CardSmall
 							rank={activeCard.rank}
 							suit={activeCard.suit}
 							className="rotate-3 shadow-xl"

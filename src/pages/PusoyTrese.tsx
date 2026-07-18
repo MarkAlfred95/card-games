@@ -28,7 +28,6 @@ import type {
 	Card as CardModel,
 	EvaluatedArrangement,
 } from "../game/types";
-import Card from "../components/Card";
 import DropZone from "../components/DropZone";
 import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
@@ -54,6 +53,7 @@ import {
 	COMEBACK_STAKE,
 	GameShell,
 } from "../components/game/pusoy-trese";
+import CardSmall from "../components/CardSmall";
 
 interface Zones {
 	hand: CardModel[];
@@ -1151,7 +1151,7 @@ export default function PusoyTrese() {
 
 				<DragOverlay>
 					{activeCard ? (
-						<Card
+						<CardSmall
 							rank={activeCard.rank}
 							suit={activeCard.suit}
 							className="rotate-3 shadow-xl"

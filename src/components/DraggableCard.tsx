@@ -1,6 +1,6 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
-import Card from './Card'
 import type { Card as CardModel } from '../game/types'
+import CardSmall from './CardSmall'
 
 interface DraggableCardProps {
   card: CardModel
@@ -33,7 +33,7 @@ export default function DraggableCard({ card, zone }: DraggableCardProps) {
       style={{ touchAction: 'none', opacity: isDragging ? 0.35 : 1 }}
       className="cursor-grab outline-none active:cursor-grabbing"
     >
-      <Card rank={card.rank} suit={card.suit} />
+      <CardSmall rank={card.rank} suit={card.suit} />
     </div>
   )
 }
