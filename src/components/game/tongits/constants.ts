@@ -9,7 +9,9 @@ export const TOTAL_ROUNDS = 6;
 export const BET_OPTIONS = [5, 10, 25, 50, 100, 250];
 
 // Hand-fan display orders, shared by the page and the table's sort rail.
-export type SortMode = "auto" | "rank-asc" | "rank-desc" | "suit";
+// "custom" means the player has dragged cards into their own arrangement;
+// it's never a button, and any preset click replaces it.
+export type SortMode = "auto" | "rank-asc" | "rank-desc" | "suit" | "custom";
 
 // Starting bankroll for every seat in an online room (the server seeds it;
 // clients use it for net-earnings standings at game over).

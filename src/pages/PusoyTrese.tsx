@@ -111,10 +111,15 @@ function sortHand(cards: CardModel[]): CardModel[] {
 const bankerOf = (gameIndex: number) =>
 	Math.floor(gameIndex / GAMES_PER_BANKER);
 
-// Random starting bankroll for a bot: $500–$2500 in $50 steps, scaled to the
-// spending division's factor.
+// Random starting bankroll for a bot: biased toward the NEXT division's
+// floor rather than the current one, so bots feel like they're already
+// playing a tier up — a bot in Platinum (min $100K) rolls a bankroll near
+// Diamond's $1M floor, not one hovering just above Platinum's own floor.
+// $5,000–$25,000 in $500 steps, scaled by 10x the division's factor (each
+// division's floor is 10x the last, so *10 lands on the next one's unit).
 function botBalance(factor: number): number {
-	return (500 + Math.round(Math.random() * 40) * 50) * factor;
+	const nextFactor = factor * 10;
+	return (500 + Math.round(Math.random() * 40) * 50) * nextFactor;
 }
 
 // A bot's per-point stake scales with its bankroll (and therefore the division):
