@@ -202,7 +202,7 @@ function revealCues(view: RoomView) {
 }
 
 export default function PusoyTreseOnline() {
-	const [theme, setTheme] = useState<ThemeKey>("classic");
+	const [theme, setTheme] = useState<ThemeKey>("neo");
 	const [back, setBack] = useState<BackKey>("lattice");
 
 	// Settings, module sync, persistence, and bg music in one hook; the result

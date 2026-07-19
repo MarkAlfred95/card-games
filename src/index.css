@@ -1,10 +1,21 @@
 @import "tailwindcss";
 @import "@fontsource-variable/fraunces";
+@import "@fontsource/michroma";
+@import "@fontsource/chakra-petch/300.css";
+@import "@fontsource/chakra-petch/400.css";
+@import "@fontsource/chakra-petch/500.css";
+@import "@fontsource/chakra-petch/600.css";
+@import "@fontsource-variable/space-grotesk";
 
 /* Display face for headings/game titles (self-hosted via @fontsource).
-   Exposed as the `font-display` utility; body text stays on the sans stack. */
+   Exposed as the `font-display` utility; body text stays on the sans stack.
+   The neo-* faces drive the neo-futuristic hub redesign: Michroma for big
+   display lettering, Chakra Petch for HUD/tech labels, Space Grotesk for body. */
 @theme {
 	--font-display: "Fraunces Variable", ui-serif, Georgia, serif;
+	--font-neo-display: "Michroma", "Eurostile", ui-sans-serif, sans-serif;
+	--font-neo-tech: "Chakra Petch", ui-monospace, monospace;
+	--font-neo-body: "Space Grotesk Variable", ui-sans-serif, sans-serif;
 }
 
 /* Sizing is shared across themes; everything scales from --card-w. */
@@ -12,6 +23,17 @@
 	--card-w: clamp(3.15rem, 1rem + 2.2vw, 5.25rem);
 	--radius-card: 0.55rem;
 	overscroll-behavior-y: none;
+
+	/* HUD chrome variables consumed by the game pages (buttons, badges,
+	   status tints, panel radii). Defaults preserve the classic amber/emerald
+	   casino look; themes may override (theme-neo restyles all of them). */
+	--hud-accent: #fcd34d;
+	--hud-accent-2: #f59e0b;
+	--hud-accent-ink: #0f172a;
+	--hud-positive: #10b981;
+	--hud-negative: #ef4444;
+	--hud-radius: 1rem;
+	--hud-radius-sm: 0.75rem;
 }
 
 * {
@@ -19,67 +41,202 @@
 }
 
 /* ── Themes ──────────────────────────────────────────────────────────────
-   Each theme overrides the color variables. Suit colors stay readable since
-   card faces are light in every theme. Add a theme here + in src/themes.js. */
+   Every theme is a color palette over the shared neo-futuristic design
+   system. `.theme-neo` (Reactor) is the base skin: it carries the fonts,
+   squared HUD chrome, and the default orange palette. The other palettes
+   are companion classes applied ALONGSIDE it (className "theme-neo
+   theme-ice" etc. in src/themes.ts) that only override the color
+   variables — so every `.theme-neo`-scoped rule keeps applying. */
 
-.theme-classic {
-	--card-face: #fdfdfb;
-	--card-border: #d4d4d8;
-	--suit-red: #d4283b;
-	--suit-black: #1b1b1f;
-	--card-selected: #f5c542;
-	--card-back-bg: #1d4ed8;
-	--card-back-ink: #bfdbfe;
-	--table-felt: #1a8a52;
-	--table-felt-2: #0e5235;
-	--ui-text: #f8fafc;
-	--seat-you: #34d399;
+/* Reactor — void black, bone cream, reactor orange (the base skin). Swaps
+   the display face to Michroma, the body face to Space Grotesk, and squares
+   off the HUD chrome. */
+.theme-neo {
+	--card-face: #f2e7d3;
+	--card-border: #c9b48e;
+	--suit-red: #f0521d;
+	--suit-black: #17130f;
+	--card-selected: #ff7a3d;
+	--card-back-bg: #17130f;
+	--card-back-ink: #f0521d;
+	--table-felt: #211a12;
+	--table-felt-2: #0e0b09;
+	--ui-text: #f2e7d3;
+	--seat-you: #f0521d;
+	--hud-accent: #f0521d;
+	--hud-accent-2: #d8430f;
+	--hud-accent-ink: #0e0b09;
+	--hud-positive: #ff7a3d;
+	--hud-negative: #e5142e;
+	--hud-radius: 0.25rem;
+	--hud-radius-sm: 2px;
+	--font-display: "Michroma", "Eurostile", ui-sans-serif, sans-serif;
+	font-family: var(--font-neo-body);
 }
 
-.theme-midnight {
-	--card-face: #f4f4f5;
-	--card-border: #3f3f46;
-	--suit-red: #e11d48;
-	--suit-black: #18181b;
-	--card-selected: #a78bfa;
-	--card-back-bg: #4c1d95;
-	--card-back-ink: #c4b5fd;
-	--table-felt: #1e293b;
-	--table-felt-2: #0f172a;
-	--ui-text: #e2e8f0;
-	--seat-you: #a78bfa;
+/* Cold circuit — blue-black base, icy white, electric cyan. Suits print in a
+   darkened cyan so they stay readable on the ice-white faces. */
+.theme-ice {
+	--card-face: #e8f0f2;
+	--card-border: #a9bec6;
+	--suit-red: #0b9eb8;
+	--suit-black: #0a0e12;
+	--card-selected: #5fe3f2;
+	--card-back-bg: #1a2530;
+	--card-back-ink: #19d3e8;
+	--table-felt: #1a2530;
+	--table-felt-2: #0a0e12;
+	--ui-text: #e8f0f2;
+	--seat-you: #19d3e8;
+	--hud-accent: #19d3e8;
+	--hud-accent-2: #12a8bc;
+	--hud-accent-ink: #0a0e12;
+	--hud-positive: #19d3e8;
+	--hud-negative: #e5142e;
 }
 
-.theme-crimson {
-	--card-face: #fbf6ec;
-	--card-border: #c9b58c;
-	--suit-red: #b91c1c;
-	--suit-black: #292524;
-	--card-selected: #eab308;
-	--card-back-bg: #7f1d1d;
-	--card-back-ink: #f0c674;
-	--table-felt: #7f1d1d;
-	--table-felt-2: #4c0f0f;
-	--ui-text: #fde68a;
-	--seat-you: #f0c674;
+/* Acid protocol — green-black base, off-white, toxic lime. Suits print in
+   olive so they stay readable on the paper-white faces. */
+.theme-acid {
+	--card-face: #edefe4;
+	--card-border: #c6cbb4;
+	--suit-red: #5f8e0b;
+	--suit-black: #0b0f0a;
+	--card-selected: #b6f225;
+	--card-back-bg: #232b1e;
+	--card-back-ink: #b6f225;
+	--table-felt: #232b1e;
+	--table-felt-2: #0b0f0a;
+	--ui-text: #edefe4;
+	--seat-you: #b6f225;
+	--hud-accent: #b6f225;
+	--hud-accent-2: #8fc110;
+	--hud-accent-ink: #0b0f0a;
+	--hud-positive: #b6f225;
+	--hud-negative: #e5142e;
 }
 
-.theme-ocean {
-	--card-face: #ffffff;
-	--card-border: #bae6fd;
-	--suit-red: #dc2626;
-	--suit-black: #0f172a;
-	--card-selected: #22d3ee;
-	--card-back-bg: #0e7490;
-	--card-back-ink: #a5f3fc;
-	--table-felt: #0d9488;
-	--table-felt-2: #115e59;
-	--ui-text: #ecfeff;
-	--seat-you: #22d3ee;
+/* Redline mono — grayscale base, chalk white, single crimson strike. Wins
+   read gunmetal-toward-white; crimson is reserved for the accent and losses. */
+.theme-redline {
+	--card-face: #f4f2ee;
+	--card-border: #c9c7c1;
+	--suit-red: #e5142e;
+	--suit-black: #101010;
+	--card-selected: #ff4d5e;
+	--card-back-bg: #2b2b2b;
+	--card-back-ink: #e5142e;
+	--table-felt: #2b2b2b;
+	--table-felt-2: #101010;
+	--ui-text: #f4f2ee;
+	--seat-you: #e5142e;
+	--hud-accent: #e5142e;
+	--hud-accent-2: #b90f24;
+	--hud-accent-ink: #f4f2ee;
+	--hud-positive: #8a8a8a;
+	--hud-negative: #e5142e;
+}
+
+/* Primary CTA buttons: normal rounded pill everywhere, chamfered HUD control
+   under the neo theme. */
+.theme-neo .hud-btn {
+	--ch: 10px;
+	border-radius: 0;
+	clip-path: polygon(
+		0 0,
+		calc(100% - var(--ch)) 0,
+		100% var(--ch),
+		100% 100%,
+		var(--ch) 100%,
+		0 calc(100% - var(--ch))
+	);
+	text-transform: uppercase;
+	letter-spacing: 0.15em;
+	font-family: var(--font-neo-tech);
+}
+
+/* Small data-readout labels: plain text normally, tracked-out Chakra Petch
+   under the neo theme. */
+.theme-neo .hud-label {
+	font-family: var(--font-neo-tech);
+	text-transform: uppercase;
+	letter-spacing: 0.2em;
+	font-size: 0.85em;
+}
+
+/* The oval casino felt becomes a chamfered slab under the neo theme. */
+.theme-neo .game-table {
+	--ch: 44px;
+	border-radius: 0;
+	border-width: 1px;
+	border-color: #3a322a;
+	clip-path: polygon(
+		0 0,
+		calc(100% - var(--ch)) 0,
+		100% var(--ch),
+		100% 100%,
+		var(--ch) 100%,
+		0 calc(100% - var(--ch))
+	);
+}
+
+/* Decorations that only exist under the neo theme (blueprint grid, grain). */
+.neo-only {
+	display: none;
+}
+.theme-neo .neo-only {
+	display: block;
 }
 
 body {
 	margin: 0;
+}
+
+/* ── Neo-futuristic hub (home page) ──────────────────────────────────────
+   Chamfered corners + film grain + hatch marks used by the redesigned home.
+   Chamfer size scales via --ch. Borders don't survive clip-path, so panels
+   nest two chamfered layers: outer = border color, inner inset by 1px. */
+
+.neo-chamfer {
+	--ch: 18px;
+	clip-path: polygon(
+		0 0,
+		calc(100% - var(--ch)) 0,
+		100% var(--ch),
+		100% 100%,
+		var(--ch) 100%,
+		0 calc(100% - var(--ch))
+	);
+}
+
+.neo-chamfer-sm {
+	--ch: 8px;
+	clip-path: polygon(
+		0 0,
+		calc(100% - var(--ch)) 0,
+		100% var(--ch),
+		100% 100%,
+		var(--ch) 100%,
+		0 calc(100% - var(--ch))
+	);
+}
+
+.neo-grain::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0.35;
+	mix-blend-mode: overlay;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+.neo-hatch {
+	background-image: repeating-linear-gradient(
+		-45deg,
+		currentColor 0 2px,
+		transparent 2px 7px
+	);
 }
 
 @media (min-width: 1024px) {

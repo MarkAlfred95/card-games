@@ -221,7 +221,7 @@ function stateFromView(view: RoomView): TongitsState | null {
 }
 
 export default function TongitsOnline() {
-	const [theme, setTheme] = useState<ThemeKey>("classic");
+	const [theme, setTheme] = useState<ThemeKey>("neo");
 	const [back, setBack] = useState<BackKey>("lattice");
 	const audio = useAudioSettings();
 	useEffect(() => {
