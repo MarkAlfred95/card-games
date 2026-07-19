@@ -29,7 +29,7 @@ export const GAMES: Game[] = [
     players: '2–4 players',
     path: '/games/pusoy-trese',
     status: 'available',
-    accent: '#157347',
+    accent: '#F0521D',
     preview: [
       { rank: 'A', suit: 'S' },
       { rank: 'K', suit: 'H' },
@@ -46,7 +46,7 @@ export const GAMES: Game[] = [
     players: '4 players',
     path: '/games/lucky-nine',
     status: 'available',
-    accent: '#0e7490',
+    accent: '#19D3E8',
     preview: [
       { rank: '4', suit: 'C' },
       { rank: '5', suit: 'D' },
@@ -63,7 +63,7 @@ export const GAMES: Game[] = [
     players: '5 players',
     path: '/games/poker',
     status: 'available',
-    accent: '#7c3aed',
+    accent: '#B6F225',
     preview: [
       { rank: 'A', suit: 'S' },
       { rank: 'K', suit: 'H' },
@@ -79,7 +79,7 @@ export const GAMES: Game[] = [
     players: '4 players',
     path: '/games/pusoy-dos',
     status: 'coming-soon',
-    accent: '#1d4ed8',
+    accent: '#C9B48E',
     preview: [
       { rank: '2', suit: 'S' },
       { rank: '2', suit: 'H' },
@@ -95,7 +95,7 @@ export const GAMES: Game[] = [
     players: '3 players',
     path: '/games/tongits',
     status: 'available',
-    accent: '#b91c1c',
+    accent: '#FF7A3D',
     preview: [
       { rank: '7', suit: 'H' },
       { rank: '8', suit: 'H' },
