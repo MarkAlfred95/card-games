@@ -150,7 +150,13 @@ function FanCard({
 			>
 				{/* Insertion cue while another card hovers over this one */}
 				{isOver && !isDragging && (
-					<span className="absolute -left-1.5 bottom-0 top-0 z-10 w-1 rounded bg-amber-300 shadow-[0_0_8px_#fcd34d]" />
+					<span
+					className="absolute -left-1.5 bottom-0 top-0 z-10 w-1 rounded"
+					style={{
+						background: "var(--hud-accent)",
+						boxShadow: "0 0 8px var(--hud-accent)",
+					}}
+				/>
 				)}
 				<CardSmall
 					rank={card.rank}

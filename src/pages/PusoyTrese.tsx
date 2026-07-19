@@ -215,7 +215,7 @@ function dealRound(humanSeat: number): RoundState {
 
 export default function PusoyTrese() {
 	const wallet = useWallet();
-	const [theme, setTheme] = useState<ThemeKey>("classic");
+	const [theme, setTheme] = useState<ThemeKey>("neo");
 	const [back, setBack] = useState<BackKey>("lattice");
 	// Settings, module sync, persistence, and bg music in one hook; the result
 	// spreads straight onto the Header.
@@ -641,7 +641,7 @@ export default function PusoyTrese() {
 								initial={{ opacity: 0, y: 24 }}
 								animate={{ opacity: 1, y: 0 }}
 								transition={{ duration: 0.45, ease: "easeOut" }}
-								className="mx-auto mt-6 w-full max-w-2xl rounded-2xl border border-white/10 bg-black/35 p-6 shadow-2xl shadow-black/30 backdrop-blur"
+								className="mx-auto mt-6 w-full max-w-2xl rounded-(--hud-radius) border border-white/10 bg-black/35 p-6 shadow-2xl shadow-black/30 backdrop-blur"
 							>
 								{/* Online multiplayer entry */}
 								<Link
@@ -655,11 +655,14 @@ export default function PusoyTrese() {
 									<LuArrowRight className="h-4 w-4 opacity-70" />
 								</Link>
 								<div className="flex gap-3 items-center">
-									<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black/20 ring-1 ring-white/10">
-										<LuArmchair className="h-8 w-8 text-amber-300" />
+									<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-(--hud-radius) bg-black/20 ring-1 ring-white/10">
+										<LuArmchair
+											className="h-8 w-8"
+											style={{ color: "var(--hud-accent)" }}
+										/>
 									</div>
 									<div className="flex flex-col">
-										<h2 className="font-display text-2xl font-semibold tracking-tight">
+										<h2 className="font-display text-2xl font-semibold tracking-tight [.theme-neo_&]:text-lg [.theme-neo_&]:uppercase">
 											Choose your seat
 										</h2>
 										<p className="mt-1 text-sm opacity-70 leading-tight">
@@ -675,7 +678,7 @@ export default function PusoyTrese() {
 								{/* Spending division selector */}
 								<div className="mt-6">
 									<div className="flex items-baseline justify-between gap-2">
-										<h3 className="text-sm font-semibold uppercase tracking-wide opacity-80">
+										<h3 className="hud-label text-sm font-semibold uppercase tracking-wide opacity-80">
 											Spending division
 										</h3>
 										<span className="text-xs opacity-60">
@@ -702,13 +705,23 @@ export default function PusoyTrese() {
 														setDivision(d)
 													}
 													disabled={locked}
-													className={`rounded-xl p-3 text-left ring-2 transition ${
+													className={`rounded-(--hud-radius-sm) p-3 text-left transition ${
 														active
-															? "bg-amber-400/15 ring-amber-400/60"
+															? ""
 															: locked
-																? "cursor-not-allowed bg-white/[0.03] opacity-50 ring-white/10"
-																: "bg-white/5 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
+																? "cursor-not-allowed bg-white/[0.03] opacity-50 ring-2 ring-white/10"
+																: "bg-white/5 ring-2 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
 													}`}
+													style={
+														active
+															? {
+																	background:
+																		"color-mix(in srgb, var(--hud-accent) 15%, transparent)",
+																	boxShadow:
+																		"0 0 0 2px color-mix(in srgb, var(--hud-accent) 60%, transparent)",
+																}
+															: undefined
+													}
 												>
 													<div className="flex items-center justify-between gap-2">
 														<span className="text-sm font-bold">
@@ -718,11 +731,18 @@ export default function PusoyTrese() {
 															· {d.name}
 														</span>
 														{active ? (
-															<span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-900">
+															<span
+																className="rounded-(--hud-radius-sm) px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+																style={{
+																	background:
+																		"var(--hud-accent)",
+																	color: "var(--hud-accent-ink)",
+																}}
+															>
 																Selected
 															</span>
 														) : locked ? (
-															<span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide opacity-80">
+															<span className="rounded-(--hud-radius-sm) bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide opacity-80">
 																Reach{" "}
 																{formatCompactUSD(
 																	d.min,
@@ -755,20 +775,32 @@ export default function PusoyTrese() {
 											<button
 												key={s}
 												onClick={() => beginMatch(s)}
-												className="group rounded-xl bg-white/5 p-4 text-left ring-2 ring-white/25 transition hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
+												className="group rounded-(--hud-radius-sm) bg-white/5 p-4 text-left ring-2 ring-white/25 transition hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
 											>
 												<div className="flex items-center justify-between">
 													<span className="text-base font-bold">
 														Seat {s + 1}
 													</span>
 													{s === 0 && (
-														<span className="rounded-full bg-amber-400 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-900">
+														<span
+															className="rounded-(--hud-radius-sm) px-3 py-1 text-[11px] font-bold uppercase tracking-wide"
+															style={{
+																background:
+																	"var(--hud-accent)",
+																color: "var(--hud-accent-ink)",
+															}}
+														>
 															Bank first
 														</span>
 													)}
 												</div>
 												<p className="mt-2 flex items-center gap-1.5 text-sm opacity-70">
-													<FaCrown className="h-3.5 w-3.5 text-amber-400" />
+													<FaCrown
+														className="h-3.5 w-3.5"
+														style={{
+															color: "var(--hud-accent)",
+														}}
+													/>
 													Banker for games {lo}–{hi}
 												</p>
 											</button>
@@ -779,11 +811,13 @@ export default function PusoyTrese() {
 								<p className="mt-5 text-sm opacity-70">
 									Your balance:{" "}
 									<b
-										className={
-											wallet.balance < 0
-												? "text-red-300"
-												: "text-emerald-300"
-										}
+										style={{
+											color: `color-mix(in srgb, ${
+												wallet.balance < 0
+													? "var(--hud-negative)"
+													: "var(--hud-positive)"
+											} 65%, white)`,
+										}}
 									>
 										{formatUSD(wallet.balance)}
 									</b>
@@ -826,12 +860,15 @@ export default function PusoyTrese() {
 							initial={{ opacity: 0, y: 24 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.45, ease: "easeOut" }}
-							className="mx-auto mt-6 w-full max-w-xl rounded-2xl border border-white/10 bg-black/25 p-6 shadow-2xl shadow-black/30 backdrop-blur"
+							className="mx-auto mt-6 w-full max-w-xl rounded-(--hud-radius) border border-white/10 bg-black/25 p-6 shadow-2xl shadow-black/30 backdrop-blur"
 						>
-							<h2 className="font-display flex items-center gap-2 text-3xl font-semibold tracking-tight">
+							<h2 className="font-display flex items-center gap-2 text-3xl font-semibold tracking-tight [.theme-neo_&]:text-xl [.theme-neo_&]:uppercase">
 								{youWon ? (
 									<>
-										<FaTrophy className="h-6 w-6 text-amber-400" />
+										<FaTrophy
+											className="h-6 w-6"
+											style={{ color: "var(--hud-accent)" }}
+										/>
 										You finished on top!
 									</>
 								) : (
@@ -846,11 +883,21 @@ export default function PusoyTrese() {
 								{ranking.map((r, i) => (
 									<div
 										key={r.seat}
-										className={`flex items-center justify-between rounded-lg px-4 py-2.5 ${
+										className={`flex items-center justify-between rounded-(--hud-radius-sm) px-4 py-2.5 ${
 											r.seat === humanSeat
-												? "bg-emerald-500/15 ring-1 ring-emerald-400/40"
+												? ""
 												: "bg-black/20"
 										}`}
+										style={
+											r.seat === humanSeat
+												? {
+														background:
+															"color-mix(in srgb, var(--seat-you) 15%, transparent)",
+														boxShadow:
+															"0 0 0 1px color-mix(in srgb, var(--seat-you) 40%, transparent)",
+													}
+												: undefined
+										}
 									>
 										<span className="font-semibold">
 											{i + 1}. {names[r.seat]}
@@ -860,13 +907,18 @@ export default function PusoyTrese() {
 												{formatUSD(r.bal)}
 											</span>
 											<span
-												className={`font-bold tabular-nums ${
-													r.earnings > 0
-														? "text-emerald-300"
-														: r.earnings < 0
-															? "text-red-300"
-															: ""
-												}`}
+												className="font-bold tabular-nums"
+												style={
+													r.earnings !== 0
+														? {
+																color: `color-mix(in srgb, ${
+																	r.earnings > 0
+																		? "var(--hud-positive)"
+																		: "var(--hud-negative)"
+																} 65%, white)`,
+															}
+														: undefined
+												}
 											>
 												{formatDelta(r.earnings)}
 											</span>
@@ -877,7 +929,12 @@ export default function PusoyTrese() {
 
 							<button
 								onClick={playAgain}
-								className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110"
+								className="hud-btn mt-6 flex w-full items-center justify-center gap-1.5 rounded-(--hud-radius-sm) px-5 py-2.5 text-sm font-bold shadow-lg transition hover:brightness-110"
+								style={{
+									background:
+										"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+									color: "var(--hud-accent-ink)",
+								}}
 							>
 								Play again <LuArrowRight className="h-4 w-4" />
 							</button>
@@ -894,7 +951,12 @@ export default function PusoyTrese() {
 	const statusBar = status.natural
 		? {
 				text: `Special hand — ${status.natural.name} (${status.natural.points} pts)! Auto-wins no matter the arrangement.`,
-				tone: "bg-amber-400/90 text-slate-900",
+				tone: "",
+				style: {
+					background:
+						"color-mix(in srgb, var(--hud-accent) 90%, transparent)",
+					color: "var(--hud-accent-ink)",
+				},
 			}
 		: status.complete
 			? status.isFoul
@@ -902,15 +964,25 @@ export default function PusoyTrese() {
 						text: status.foulBM
 							? "Foul — middle is stronger than back"
 							: "Foul — front is stronger than middle",
-						tone: "bg-red-500/85 text-white",
+						tone: "text-white",
+						style: {
+							background:
+								"color-mix(in srgb, var(--hud-negative) 85%, transparent)",
+						},
 					}
 				: {
 						text: "Legal arrangement ✓ — ready to score",
-						tone: "bg-emerald-500/85 text-white",
+						tone: "",
+						style: {
+							background:
+								"color-mix(in srgb, var(--hud-positive) 85%, transparent)",
+							color: "var(--hud-accent-ink)",
+						},
 					}
 			: {
 					text: `Place all 13 cards — ${zones.hand.length} left in hand`,
 					tone: "bg-white/15",
+					style: undefined,
 				};
 
 	// Per-row point chips for the reveal. Each row's margin is the head-to-head
@@ -959,8 +1031,19 @@ export default function PusoyTrese() {
 					<div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
 						{/* Table-level notices */}
 						{phase !== "betting" && humanIsBanker && (
-							<div className="flex items-center gap-2 rounded-lg bg-amber-400/20 px-4 py-2 text-sm font-medium ring-1 ring-amber-400/40">
-								<FaCrown className="h-4 w-4 shrink-0 text-amber-400" />
+							<div
+								className="flex items-center gap-2 rounded-(--hud-radius-sm) px-4 py-2 text-sm font-medium"
+								style={{
+									background:
+										"color-mix(in srgb, var(--hud-accent) 20%, transparent)",
+									boxShadow:
+										"0 0 0 1px color-mix(in srgb, var(--hud-accent) 40%, transparent)",
+								}}
+							>
+								<FaCrown
+									className="h-4 w-4 shrink-0"
+									style={{ color: "var(--hud-accent)" }}
+								/>
 								<span>
 									You are the banker this game — you play
 									every other player at their stake.
@@ -970,7 +1053,15 @@ export default function PusoyTrese() {
 						{phase !== "betting" &&
 							!humanIsBanker &&
 							wallet.balance < MIN_CHIP * factor && (
-								<div className="rounded-lg bg-sky-400/20 px-4 py-2 text-sm font-medium ring-1 ring-sky-400/40">
+								<div
+									className="rounded-(--hud-radius-sm) px-4 py-2 text-sm font-medium"
+									style={{
+										background:
+											"color-mix(in srgb, var(--hud-negative) 18%, transparent)",
+										boxShadow:
+											"0 0 0 1px color-mix(in srgb, var(--hud-negative) 40%, transparent)",
+									}}
+								>
 									💸 Out of money — you're auto-staked{" "}
 									{formatUSD(COMEBACK_STAKE * factor)}/pt this
 									game to win some back.
@@ -1026,7 +1117,7 @@ export default function PusoyTrese() {
 							{arrangeOpen ? (
 								<div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-2 sm:px-4 sm:pb-4">
 									<div
-										className="flex max-h-[82dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/15 shadow-2xl backdrop-blur"
+										className="flex max-h-[82dvh] w-full max-w-3xl flex-col overflow-hidden rounded-(--hud-radius) border border-white/15 shadow-2xl backdrop-blur"
 										style={{
 											backgroundColor:
 												"color-mix(in srgb, var(--table-felt-2) 92%, black)",
@@ -1035,7 +1126,7 @@ export default function PusoyTrese() {
 										{/* Sheet header: grab handle + collapse */}
 										<div className="flex flex-col gap-2 border-b border-white/10 p-4">
 											<div className="flex items-center justify-between">
-												<span className="font-display text-lg font-semibold tracking-tight opacity-90">
+												<span className="font-display text-lg font-semibold tracking-tight opacity-90 [.theme-neo_&]:text-sm [.theme-neo_&]:uppercase">
 													Arrange your hand
 												</span>
 												<div className="flex items-center gap-1.5">
@@ -1061,7 +1152,8 @@ export default function PusoyTrese() {
 											</div>
 											{/* Status */}
 											<div
-												className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium backdrop-blur ${statusBar.tone}`}
+												className={`flex-1 rounded-(--hud-radius-sm) px-4 py-2.5 text-sm font-medium backdrop-blur ${statusBar.tone}`}
+												style={statusBar.style}
 											>
 												{statusBar.text}
 											</div>
@@ -1126,7 +1218,12 @@ export default function PusoyTrese() {
 													!status.complete ||
 													phase === "scoring"
 												}
-												className="w-full rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100 sm:w-auto cursor-pointer"
+												className="hud-btn w-full rounded-(--hud-radius-sm) px-5 py-2.5 text-sm font-bold shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100 sm:w-auto cursor-pointer"
+												style={{
+													background:
+														"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+													color: "var(--hud-accent-ink)",
+												}}
 											>
 												{phase === "scoring"
 													? "Scoring…"
@@ -1138,7 +1235,7 @@ export default function PusoyTrese() {
 							) : (
 								<button
 									onClick={() => setArrangeOpen(true)}
-									className="fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-t-2xl border-t border-white/15 px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur"
+									className="fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-t-(--hud-radius) border-t border-white/15 px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur"
 									style={{
 										backgroundColor:
 											"color-mix(in srgb, var(--table-felt-2) 92%, black)",
@@ -1169,7 +1266,8 @@ export default function PusoyTrese() {
 }
 
 // Soft ambient glows matching the home page; neutral tints so they sit well on
-// any felt theme.
+// any felt theme. Under the neo theme a faint blueprint grid + grain replace
+// the casino mood lighting.
 function AmbientGlow() {
 	return (
 		<div
@@ -1177,7 +1275,16 @@ function AmbientGlow() {
 			className="pointer-events-none absolute inset-0 overflow-hidden"
 		>
 			<div className="absolute -top-40 left-1/2 h-[30rem] w-[50rem] -translate-x-1/2 rounded-full bg-white/[0.06] blur-3xl" />
-			<div className="absolute -bottom-48 -right-32 h-[24rem] w-[34rem] rounded-full bg-amber-400/[0.06] blur-3xl" />
+			<div className="absolute -bottom-48 -right-32 h-[24rem] w-[34rem] rounded-full bg-amber-400/[0.06] blur-3xl [.theme-neo_&]:hidden" />
+			<div
+				className="neo-only absolute inset-0 opacity-40"
+				style={{
+					backgroundImage:
+						"linear-gradient(to right, #3a322a33 1px, transparent 1px), linear-gradient(to bottom, #3a322a33 1px, transparent 1px)",
+					backgroundSize: "84px 84px",
+				}}
+			/>
+			<div className="neo-only neo-grain absolute inset-0" />
 		</div>
 	);
 }

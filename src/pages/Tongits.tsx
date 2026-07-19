@@ -31,6 +31,7 @@ import {
 import type { TongitsState } from "../game/tongits";
 import { decideAct, decideDraw, decideFight } from "../game/tongitsBot";
 import type { Card as CardModel } from "../game/types";
+import type { CSSVars } from "../styleVars";
 import { THEMES, THEME_KEYS } from "../themes";
 import type { ThemeKey } from "../themes";
 import { BACKS, BACK_KEYS } from "../cardbacks";
@@ -65,7 +66,17 @@ const SUIT_ORDER: Record<string, number> = { S: 0, H: 1, C: 2, D: 3 };
 
 // Shared styling for the big action-bar buttons.
 const ACTION_BTN =
-	"flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wide transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-6 sm:text-sm";
+	"flex items-center gap-1.5 rounded-(--hud-radius-sm) px-4 py-2.5 text-xs font-bold uppercase tracking-wide transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-6 sm:text-sm";
+
+// Win/loss text tint from the theme's HUD variables.
+const deltaStyle = (v: number) =>
+	v === 0
+		? undefined
+		: {
+				color: `color-mix(in srgb, ${
+					v > 0 ? "var(--hud-positive)" : "var(--hud-negative)"
+				} 65%, white)`,
+			};
 
 // Random starting bankroll for a bot: $500–$2500 in $50 steps, scaled to the
 // spending division's factor (same spread as the other games).
@@ -104,7 +115,7 @@ function sortForDisplay(hand: CardModel[], mode: SortMode): CardModel[] {
 
 export default function Tongits() {
 	const wallet = useWallet();
-	const [theme, setTheme] = useState<ThemeKey>("classic");
+	const [theme, setTheme] = useState<ThemeKey>("neo");
 	const [back, setBack] = useState<BackKey>("lattice");
 	const audio = useAudioSettings();
 	useEffect(() => {
@@ -646,7 +657,7 @@ export default function Tongits() {
 						initial={{ opacity: 0, y: 24 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.45, ease: "easeOut" }}
-						className="mx-auto mt-6 w-full max-w-2xl rounded-2xl border border-white/10 bg-black/35 p-6 shadow-2xl shadow-black/30 backdrop-blur"
+						className="mx-auto mt-6 w-full max-w-2xl rounded-(--hud-radius) border border-white/10 bg-black/35 p-6 shadow-2xl shadow-black/30 backdrop-blur"
 					>
 						{/* Online multiplayer entry */}
 						<Link
@@ -660,11 +671,14 @@ export default function Tongits() {
 							<LuArrowRight className="h-4 w-4 opacity-70" />
 						</Link>
 						<div className="flex items-center gap-3">
-							<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black/20 ring-1 ring-white/10">
-								<LuSwords className="h-8 w-8 text-amber-300" />
+							<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-(--hud-radius) bg-black/20 ring-1 ring-white/10">
+								<LuSwords
+									className="h-8 w-8"
+									style={{ color: "var(--hud-accent)" }}
+								/>
 							</div>
 							<div className="flex flex-col">
-								<h2 className="font-display text-2xl font-semibold tracking-tight">
+								<h2 className="font-display text-2xl font-semibold tracking-tight [.theme-neo_&]:text-lg [.theme-neo_&]:uppercase">
 									Tongits
 								</h2>
 								<p className="mt-1 text-sm leading-tight opacity-70">
@@ -678,7 +692,7 @@ export default function Tongits() {
 						{/* Spending division selector */}
 						<div className="mt-6">
 							<div className="flex items-baseline justify-between gap-2">
-								<h3 className="text-sm font-semibold uppercase tracking-wide opacity-80">
+								<h3 className="hud-label text-sm font-semibold uppercase tracking-wide opacity-80">
 									Spending division
 								</h3>
 								<span className="text-xs opacity-60">
@@ -701,13 +715,23 @@ export default function Tongits() {
 												!locked && setDivision(d)
 											}
 											disabled={locked}
-											className={`rounded-xl p-3 text-left ring-2 transition ${
+											className={`rounded-(--hud-radius-sm) p-3 text-left transition ${
 												active
-													? "bg-amber-400/15 ring-amber-400/60"
+													? ""
 													: locked
-														? "cursor-not-allowed bg-white/[0.03] opacity-50 ring-white/10"
-														: "bg-white/5 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
+														? "cursor-not-allowed bg-white/[0.03] opacity-50 ring-2 ring-white/10"
+														: "bg-white/5 ring-2 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
 											}`}
+											style={
+												active
+													? {
+															background:
+																"color-mix(in srgb, var(--hud-accent) 15%, transparent)",
+															boxShadow:
+																"0 0 0 2px color-mix(in srgb, var(--hud-accent) 60%, transparent)",
+														}
+													: undefined
+											}
 										>
 											<div className="flex items-center justify-between gap-2">
 												<span className="text-sm font-bold">
@@ -715,11 +739,18 @@ export default function Tongits() {
 													{d.name}
 												</span>
 												{active ? (
-													<span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-900">
+													<span
+														className="rounded-(--hud-radius-sm) px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+														style={{
+															background:
+																"var(--hud-accent)",
+															color: "var(--hud-accent-ink)",
+														}}
+													>
 														Selected
 													</span>
 												) : locked ? (
-													<span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide opacity-80">
+													<span className="rounded-(--hud-radius-sm) bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide opacity-80">
 														Reach{" "}
 														{formatCompactUSD(
 															d.min,
@@ -748,7 +779,7 @@ export default function Tongits() {
 						{/* Stake selector */}
 						<div className="mt-6">
 							<div className="flex items-baseline justify-between gap-2">
-								<h3 className="text-sm font-semibold uppercase tracking-wide opacity-80">
+								<h3 className="hud-label text-sm font-semibold uppercase tracking-wide opacity-80">
 									Stake per round
 								</h3>
 								<span className="text-xs opacity-60">
@@ -773,13 +804,23 @@ export default function Tongits() {
 												setBet(b);
 											}}
 											disabled={locked}
-											className={`rounded-xl px-2 py-2.5 text-sm font-bold tabular-nums ring-2 transition ${
+											className={`rounded-(--hud-radius-sm) px-2 py-2.5 text-sm font-bold tabular-nums transition ${
 												active
-													? "bg-amber-400/15 ring-amber-400/60"
+													? ""
 													: locked
-														? "cursor-not-allowed bg-white/[0.03] opacity-40 ring-white/10"
-														: "bg-white/5 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
+														? "cursor-not-allowed bg-white/[0.03] opacity-40 ring-2 ring-white/10"
+														: "bg-white/5 ring-2 ring-white/20 hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/40"
 											}`}
+											style={
+												active
+													? {
+															background:
+																"color-mix(in srgb, var(--hud-accent) 15%, transparent)",
+															boxShadow:
+																"0 0 0 2px color-mix(in srgb, var(--hud-accent) 60%, transparent)",
+														}
+													: undefined
+											}
 										>
 											{formatCompactUSD(b * factor)}
 										</button>
@@ -806,9 +847,14 @@ export default function Tongits() {
 							].map(([t, d]) => (
 								<div
 									key={t}
-									className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10"
+									className="rounded-(--hud-radius-sm) bg-white/5 p-3 ring-1 ring-white/10"
 								>
-									<div className="text-xs font-bold uppercase tracking-wide text-amber-300">
+									<div
+										className="hud-label text-xs font-bold uppercase tracking-wide"
+										style={{
+											color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+										}}
+									>
 										{t}
 									</div>
 									<p className="mt-1 text-xs leading-snug opacity-80">
@@ -821,7 +867,12 @@ export default function Tongits() {
 						<button
 							onClick={beginMatch}
 							disabled={wallet.balance < bet * factor}
-							className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+							className="hud-btn mt-6 flex w-full items-center justify-center gap-1.5 rounded-(--hud-radius-sm) px-5 py-2.5 text-sm font-bold shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+							style={{
+								background:
+									"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+								color: "var(--hud-accent-ink)",
+							}}
 						>
 							Start match <LuArrowRight className="h-4 w-4" />
 						</button>
@@ -829,11 +880,13 @@ export default function Tongits() {
 						<p className="mt-5 text-sm opacity-70">
 							Your balance:{" "}
 							<b
-								className={
-									wallet.balance < 0
-										? "text-red-300"
-										: "text-emerald-300"
-								}
+								style={{
+									color: `color-mix(in srgb, ${
+										wallet.balance < 0
+											? "var(--hud-negative)"
+											: "var(--hud-positive)"
+									} 65%, white)`,
+								}}
 							>
 								{formatUSD(wallet.balance)}
 							</b>
@@ -875,12 +928,15 @@ export default function Tongits() {
 						initial={{ opacity: 0, y: 24 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.45, ease: "easeOut" }}
-						className="mx-auto mt-6 w-full max-w-xl rounded-2xl border border-white/10 bg-black/25 p-6 shadow-2xl shadow-black/30 backdrop-blur"
+						className="mx-auto mt-6 w-full max-w-xl rounded-(--hud-radius) border border-white/10 bg-black/25 p-6 shadow-2xl shadow-black/30 backdrop-blur"
 					>
-						<h2 className="font-display flex items-center gap-2 text-3xl font-semibold tracking-tight">
+						<h2 className="font-display flex items-center gap-2 text-3xl font-semibold tracking-tight [.theme-neo_&]:text-xl [.theme-neo_&]:uppercase">
 							{youWon ? (
 								<>
-									<FaTrophy className="h-6 w-6 text-amber-400" />
+									<FaTrophy
+										className="h-6 w-6"
+										style={{ color: "var(--hud-accent)" }}
+									/>
 									You finished on top!
 								</>
 							) : (
@@ -895,11 +951,19 @@ export default function Tongits() {
 							{ranking.map((r, i) => (
 								<div
 									key={r.seat}
-									className={`flex items-center justify-between rounded-lg px-4 py-2.5 ${
-										r.seat === HUMAN
-											? "bg-emerald-500/15 ring-1 ring-emerald-400/40"
-											: "bg-black/20"
+									className={`flex items-center justify-between rounded-(--hud-radius-sm) px-4 py-2.5 ${
+										r.seat === HUMAN ? "" : "bg-black/20"
 									}`}
+									style={
+										r.seat === HUMAN
+											? {
+													background:
+														"color-mix(in srgb, var(--seat-you) 15%, transparent)",
+													boxShadow:
+														"0 0 0 1px color-mix(in srgb, var(--seat-you) 40%, transparent)",
+												}
+											: undefined
+									}
 								>
 									<span className="font-semibold">
 										{i + 1}. {names[r.seat]}
@@ -909,13 +973,8 @@ export default function Tongits() {
 											{formatUSD(r.bal)}
 										</span>
 										<span
-											className={`font-bold tabular-nums ${
-												r.earnings > 0
-													? "text-emerald-300"
-													: r.earnings < 0
-														? "text-red-300"
-														: ""
-											}`}
+											className="font-bold tabular-nums"
+											style={deltaStyle(r.earnings)}
 										>
 											{formatDelta(r.earnings)}
 										</span>
@@ -926,7 +985,12 @@ export default function Tongits() {
 
 						<button
 							onClick={playAgain}
-							className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110"
+							className="hud-btn mt-6 flex w-full items-center justify-center gap-1.5 rounded-(--hud-radius-sm) px-5 py-2.5 text-sm font-bold shadow-lg transition hover:brightness-110"
+							style={{
+								background:
+									"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+								color: "var(--hud-accent-ink)",
+							}}
 						>
 							Play again <LuArrowRight className="h-4 w-4" />
 						</button>
@@ -1026,7 +1090,12 @@ export default function Tongits() {
 			<button
 				onClick={doMeld}
 				disabled={!canActNow || !meldValid}
-				className={`${ACTION_BTN} bg-gradient-to-b from-amber-300 to-amber-500 text-slate-900 shadow-lg shadow-amber-500/20 hover:brightness-110 disabled:hover:brightness-100`}
+				className={`${ACTION_BTN} hud-btn shadow-lg hover:brightness-110 disabled:hover:brightness-100`}
+				style={{
+					background:
+						"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+					color: "var(--hud-accent-ink)",
+				}}
 			>
 				Meld
 			</button>
@@ -1056,7 +1125,12 @@ export default function Tongits() {
 
 	const revealFooter = res && (
 		<div className="flex flex-col items-center gap-2 py-1">
-			<div className="text-center text-sm font-bold text-amber-300">
+			<div
+				className="text-center text-sm font-bold"
+				style={{
+					color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+				}}
+			>
 				{headline}
 			</div>
 			<button
@@ -1064,8 +1138,11 @@ export default function Tongits() {
 				style={{
 					animation:
 						"popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s both",
+					background:
+						"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+					color: "var(--hud-accent-ink)",
 				}}
-				className="flex items-center gap-1.5 rounded-xl bg-amber-400 px-6 py-2.5 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-amber-300"
+				className="hud-btn flex items-center gap-1.5 rounded-(--hud-radius-sm) px-6 py-2.5 text-sm font-bold shadow-lg transition hover:brightness-110"
 			>
 				{round >= TOTAL_ROUNDS ? "Final standings" : "Next round"}
 				<LuArrowRight className="h-4 w-4" />
@@ -1083,11 +1160,16 @@ export default function Tongits() {
 				{/* The table frame: felt + wooden rim wrapping the board, your
 				    hand, and the action bar (reference layout). */}
 				<div
-					className="mx-auto flex w-full max-w-7xl flex-1 flex-col rounded-[1.75rem] border-[6px] border-black/40 p-3 pt-4 shadow-[inset_0_0_70px_rgba(0,0,0,0.5)] ring-1 ring-white/10 sm:rounded-[3rem] sm:border-8 sm:p-5"
-					style={{
-						background:
-							"radial-gradient(ellipse at 50% 30%, var(--table-felt), var(--table-felt-2))",
-					}}
+					className="game-table mx-auto flex w-full max-w-7xl flex-1 flex-col rounded-[1.75rem] border-[6px] border-black/40 p-3 pt-4 shadow-[inset_0_0_70px_rgba(0,0,0,0.5)] ring-1 ring-white/10 sm:rounded-[3rem] sm:border-8 sm:p-5"
+					style={
+						{
+							background:
+								"radial-gradient(ellipse at 50% 30%, var(--table-felt), var(--table-felt-2))",
+							// Content sits inside this frame, so keep the neo
+							// chamfer small enough not to clip the corner rails.
+							"--ch": "24px",
+						} as CSSVars
+					}
 				>
 					<TongitsTable
 						state={game}
@@ -1146,10 +1228,14 @@ export default function Tongits() {
 								</div>
 								{game.dealer === HUMAN && (
 									<span
-										className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-amber-400"
+										className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full"
+										style={{ background: "var(--hud-accent)" }}
 										title="Dealer"
 									>
-										<FaCrown className="h-3 w-3 text-slate-900" />
+										<FaCrown
+											className="h-3 w-3"
+											style={{ color: "var(--hud-accent-ink)" }}
+										/>
 									</span>
 								)}
 							</div>
@@ -1157,7 +1243,10 @@ export default function Tongits() {
 								<div className="flex items-center gap-1.5 text-sm font-semibold">
 									You
 									{humanWon && (
-										<FaTrophy className="h-3.5 w-3.5 text-amber-400" />
+										<FaTrophy
+											className="h-3.5 w-3.5"
+											style={{ color: "var(--hud-accent)" }}
+										/>
 									)}
 									{reveal &&
 										res?.burned[HUMAN] &&
@@ -1172,23 +1261,21 @@ export default function Tongits() {
 								</div>
 								<div className="text-[11px] tabular-nums opacity-90">
 									{hand.length} cards · deadwood{" "}
-									<b className="text-amber-300">
+									<b
+										style={{
+											color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+										}}
+									>
 										{reveal
 											? res?.points[HUMAN]
 											: handPoints(hand)}
 									</b>
 									{reveal && (
 										<b
-											className={`ml-1.5 ${
-												(res?.moneyDeltas[HUMAN] ??
-													0) > 0
-													? "text-emerald-300"
-													: (res?.moneyDeltas[
-																HUMAN
-															] ?? 0) < 0
-														? "text-red-300"
-														: "opacity-60"
-											}`}
+											className={`ml-1.5 ${(res?.moneyDeltas[HUMAN] ?? 0) === 0 ? "opacity-60" : ""}`}
+											style={deltaStyle(
+												res?.moneyDeltas[HUMAN] ?? 0,
+											)}
 										>
 											{formatDelta(
 												res?.moneyDeltas[HUMAN] ?? 0,
@@ -1213,10 +1300,15 @@ export default function Tongits() {
 							<div className="flex flex-col items-center gap-2.5">
 								<p
 									className={`text-center text-xs font-medium sm:text-sm ${
-										isHumanTurn
-											? "text-emerald-300"
-											: "opacity-60"
+										isHumanTurn ? "" : "opacity-60"
 									}`}
+									style={
+										isHumanTurn
+											? {
+													color: "color-mix(in srgb, var(--hud-positive) 65%, white)",
+												}
+											: undefined
+									}
 								>
 									{hint}
 								</p>
@@ -1236,7 +1328,7 @@ export default function Tongits() {
 				(handOpen ? (
 					<div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-2">
 						<div
-							className="flex max-h-[80dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/15 shadow-2xl backdrop-blur"
+							className="flex max-h-[80dvh] w-full max-w-3xl flex-col overflow-hidden rounded-(--hud-radius) border border-white/15 shadow-2xl backdrop-blur"
 							style={{
 								backgroundColor:
 									"color-mix(in srgb, var(--table-felt-2) 92%, black)",
@@ -1250,10 +1342,19 @@ export default function Tongits() {
 											😎
 											{game.dealer === HUMAN && (
 												<span
-													className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-400"
+													className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full"
+													style={{
+														background:
+															"var(--hud-accent)",
+													}}
 													title="Dealer"
 												>
-													<FaCrown className="h-2.5 w-2.5 text-slate-900" />
+													<FaCrown
+														className="h-2.5 w-2.5"
+														style={{
+															color: "var(--hud-accent-ink)",
+														}}
+													/>
 												</span>
 											)}
 										</span>
@@ -1261,7 +1362,12 @@ export default function Tongits() {
 											<span className="flex items-center gap-1.5 text-sm font-semibold">
 												Your hand
 												{humanWon && (
-													<FaTrophy className="h-3.5 w-3.5 text-amber-400" />
+													<FaTrophy
+														className="h-3.5 w-3.5"
+														style={{
+															color: "var(--hud-accent)",
+														}}
+													/>
 												)}
 												{reveal &&
 													res?.burned[HUMAN] &&
@@ -1274,28 +1380,23 @@ export default function Tongits() {
 											<span className="block text-[11px] tabular-nums opacity-75">
 												{formatUSD(wallet.balance)} ·{" "}
 												{hand.length} cards · deadwood{" "}
-												<b className="text-amber-300">
+												<b
+													style={{
+														color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+													}}
+												>
 													{reveal
 														? res?.points[HUMAN]
 														: handPoints(hand)}
 												</b>
 												{reveal && (
 													<b
-														className={`ml-1.5 ${
-															(res
-																?.moneyDeltas[
+														className={`ml-1.5 ${(res?.moneyDeltas[HUMAN] ?? 0) === 0 ? "opacity-60" : ""}`}
+														style={deltaStyle(
+															res?.moneyDeltas[
 																HUMAN
-															] ?? 0) > 0
-																? "text-emerald-300"
-																: (res
-																			?.moneyDeltas[
-																			HUMAN
-																		] ??
-																			0) <
-																	  0
-																	? "text-red-300"
-																	: "opacity-60"
-														}`}
+															] ?? 0,
+														)}
 													>
 														{formatDelta(
 															res?.moneyDeltas[
@@ -1319,13 +1420,24 @@ export default function Tongits() {
 								</div>
 								{/* Status strip */}
 								<div
-									className={`rounded-lg px-3 py-2 text-xs font-medium ${
-										res
-											? "bg-amber-400/90 text-slate-900"
-											: isHumanTurn
-												? "bg-emerald-500/85 text-white"
-												: "bg-white/15"
+									className={`rounded-(--hud-radius-sm) px-3 py-2 text-xs font-medium ${
+										res || isHumanTurn ? "" : "bg-white/15"
 									}`}
+									style={
+										res
+											? {
+													background:
+														"color-mix(in srgb, var(--hud-accent) 90%, transparent)",
+													color: "var(--hud-accent-ink)",
+												}
+											: isHumanTurn
+												? {
+														background:
+															"color-mix(in srgb, var(--hud-positive) 85%, transparent)",
+														color: "var(--hud-accent-ink)",
+													}
+												: undefined
+									}
 								>
 									{res ? headline : hint}
 								</div>
@@ -1355,14 +1467,19 @@ export default function Tongits() {
 							playSfx("button_click");
 							setHandOpen(true);
 						}}
-						className={`fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-t-2xl border-t px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur ${
-							isHumanTurn && !res
-								? "border-emerald-400/60 text-emerald-300"
-								: "border-white/15"
+						className={`fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-t-(--hud-radius) border-t px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur ${
+							isHumanTurn && !res ? "" : "border-white/15"
 						}`}
 						style={{
 							backgroundColor:
 								"color-mix(in srgb, var(--table-felt-2) 92%, black)",
+							...(isHumanTurn && !res
+								? {
+										borderColor:
+											"color-mix(in srgb, var(--hud-positive) 60%, transparent)",
+										color: "color-mix(in srgb, var(--hud-positive) 65%, white)",
+									}
+								: {}),
 						}}
 					>
 						<LuChevronUp className="h-4 w-4" />
@@ -1372,10 +1489,13 @@ export default function Tongits() {
 						</span>
 						{!res && isHumanTurn && (
 							<span
-								className="rounded-full bg-emerald-400/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-900"
+								className="rounded-(--hud-radius-sm) px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
 								style={{
 									animation:
 										"winnerPulse 1.6s ease-in-out infinite",
+									background:
+										"color-mix(in srgb, var(--hud-positive) 90%, transparent)",
+									color: "var(--hud-accent-ink)",
 								}}
 							>
 								Your turn
@@ -1401,10 +1521,13 @@ export default function Tongits() {
 								stiffness: 280,
 								damping: 22,
 							}}
-							className="w-full max-w-sm rounded-2xl border border-white/15 bg-black/85 p-6 text-center shadow-2xl"
+							className="w-full max-w-sm rounded-(--hud-radius) border border-white/15 bg-black/85 p-6 text-center shadow-2xl"
 						>
-							<LuSwords className="mx-auto h-8 w-8 text-purple-300" />
-							<h3 className="font-display mt-2 text-2xl font-semibold tracking-tight">
+							<LuSwords
+								className="mx-auto h-8 w-8"
+								style={{ color: "var(--hud-accent)" }}
+							/>
+							<h3 className="font-display mt-2 text-2xl font-semibold tracking-tight [.theme-neo_&]:text-lg [.theme-neo_&]:uppercase">
 								{names[fightPrompt]} calls a Draw!
 							</h3>
 							<p className="mt-2 text-sm opacity-70">
@@ -1424,7 +1547,7 @@ export default function Tongits() {
 										playSfx("button_click");
 										resolveFightWith(fightPrompt, false);
 									}}
-									className="flex-1 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold ring-1 ring-white/20 transition hover:bg-white/20"
+									className="hud-btn flex-1 rounded-(--hud-radius-sm) bg-white/10 px-4 py-2.5 text-sm font-bold ring-1 ring-white/20 transition hover:bg-white/20"
 								>
 									Fold
 								</button>
@@ -1433,7 +1556,12 @@ export default function Tongits() {
 										playSfx("chip_stack");
 										resolveFightWith(fightPrompt, true);
 									}}
-									className="flex-1 rounded-xl bg-gradient-to-b from-purple-300 to-purple-500 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-lg transition hover:brightness-110"
+									className="hud-btn flex-1 rounded-(--hud-radius-sm) px-4 py-2.5 text-sm font-bold shadow-lg transition hover:brightness-110"
+									style={{
+										background:
+											"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+										color: "var(--hud-accent-ink)",
+									}}
 								>
 									Fight!
 								</button>
@@ -1452,13 +1580,25 @@ export default function Tongits() {
 							initial={{ opacity: 0, y: 16, scale: 0.9 }}
 							animate={{ opacity: 1, y: 0, scale: 1 }}
 							exit={{ opacity: 0, y: 8, scale: 0.95 }}
-							className={`rounded-xl px-4 py-2.5 text-sm font-semibold shadow-2xl ring-1 backdrop-blur ${
-								t.tone === "error"
-									? "bg-red-500/90 text-white ring-red-300/40"
-									: t.tone === "success"
-										? "bg-emerald-500/90 text-white ring-emerald-300/40"
-										: "bg-black/80 text-white ring-white/20"
+							className={`rounded-(--hud-radius-sm) px-4 py-2.5 text-sm font-semibold shadow-2xl backdrop-blur ${
+								t.tone === "info"
+									? "bg-black/80 text-white ring-1 ring-white/20"
+									: "text-white"
 							}`}
+							style={
+								t.tone === "error"
+									? {
+											background:
+												"color-mix(in srgb, var(--hud-negative) 90%, transparent)",
+										}
+									: t.tone === "success"
+										? {
+												background:
+													"color-mix(in srgb, var(--hud-positive) 90%, transparent)",
+												color: "var(--hud-accent-ink)",
+											}
+										: undefined
+							}
 						>
 							{t.text}
 						</motion.div>
@@ -1469,7 +1609,8 @@ export default function Tongits() {
 	);
 }
 
-// Soft ambient glows matching the other game setup screens.
+// Soft ambient glows matching the other game setup screens. Under the neo
+// theme a faint blueprint grid + grain replace the casino mood lighting.
 function AmbientGlow() {
 	return (
 		<div
@@ -1477,7 +1618,16 @@ function AmbientGlow() {
 			className="pointer-events-none absolute inset-0 overflow-hidden"
 		>
 			<div className="absolute -top-40 left-1/2 h-[30rem] w-[50rem] -translate-x-1/2 rounded-full bg-white/[0.06] blur-3xl" />
-			<div className="absolute -bottom-48 -right-32 h-[24rem] w-[34rem] rounded-full bg-amber-400/[0.06] blur-3xl" />
+			<div className="absolute -bottom-48 -right-32 h-[24rem] w-[34rem] rounded-full bg-amber-400/[0.06] blur-3xl [.theme-neo_&]:hidden" />
+			<div
+				className="neo-only absolute inset-0 opacity-40"
+				style={{
+					backgroundImage:
+						"linear-gradient(to right, #3a322a33 1px, transparent 1px), linear-gradient(to bottom, #3a322a33 1px, transparent 1px)",
+					backgroundSize: "84px 84px",
+				}}
+			/>
+			<div className="neo-only neo-grain absolute inset-0" />
 		</div>
 	);
 }

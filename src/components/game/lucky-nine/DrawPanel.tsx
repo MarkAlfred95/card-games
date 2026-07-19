@@ -37,16 +37,23 @@ export default function DrawPanel({
 					natural === 9
 						? "Lucky 9! The best hand in the game — naturals stand."
 						: "Natural 8 — two cards, hard to beat. Naturals stand.",
-				tone: "bg-amber-400/90 text-slate-900",
+				tone: "",
+				style: {
+					background:
+						"color-mix(in srgb, var(--hud-accent) 90%, transparent)",
+					color: "var(--hud-accent-ink)",
+				},
 			}
 		: cards.length === 3
 			? {
 					text: `Final total: ${total} — revealing…`,
 					tone: "bg-white/15",
+					style: undefined,
 				}
 			: {
 					text: `Your total is ${total}. Hirit for a third card, or stand?`,
 					tone: "bg-white/15",
+					style: undefined,
 				};
 
 	// A natural must stand — only the hirit button locks; Stand still reveals.
@@ -55,7 +62,7 @@ export default function DrawPanel({
 
 	return (
 		<div
-			className="flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-white/15 shadow-2xl backdrop-blur"
+			className="flex w-full max-w-xl flex-col overflow-hidden rounded-(--hud-radius) border border-white/15 shadow-2xl backdrop-blur"
 			style={{
 				backgroundColor:
 					"color-mix(in srgb, var(--table-felt-2) 92%, black)",
@@ -63,10 +70,19 @@ export default function DrawPanel({
 		>
 			<div className="flex flex-col gap-2 border-b border-white/10 p-4">
 				<div className="flex items-center justify-between">
-					<span className="font-display text-lg font-semibold tracking-tight opacity-90">
+					<span className="font-display text-lg font-semibold tracking-tight opacity-90 [.theme-neo_&]:text-sm [.theme-neo_&]:uppercase">
 						Your hand
 						{isBanker && (
-							<span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/40">
+							<span
+								className="hud-label ml-2 rounded-(--hud-radius-sm) px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+								style={{
+									backgroundColor:
+										"color-mix(in srgb, var(--hud-accent) 20%, transparent)",
+									color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+									boxShadow:
+										"0 0 0 1px color-mix(in srgb, var(--hud-accent) 40%, transparent)",
+								}}
+							>
 								Banking
 							</span>
 						)}
@@ -82,7 +98,8 @@ export default function DrawPanel({
 					</div>
 				</div>
 				<div
-					className={`rounded-lg px-4 py-2.5 text-sm font-medium backdrop-blur ${status.tone}`}
+					className={`rounded-(--hud-radius-sm) px-4 py-2.5 text-sm font-medium backdrop-blur ${status.tone}`}
+					style={status.style}
 				>
 					{status.text}
 				</div>
@@ -114,7 +131,7 @@ export default function DrawPanel({
 				<button
 					onClick={onStand}
 					disabled={!canStand}
-					className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/10 px-5 py-2.5 text-sm font-bold ring-1 ring-white/20 transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/10"
+					className="hud-btn flex flex-1 items-center justify-center gap-1.5 rounded-(--hud-radius-sm) bg-white/10 px-5 py-2.5 text-sm font-bold ring-1 ring-white/20 transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/10"
 				>
 					<LuHand className="h-4 w-4" />
 					Stand
@@ -122,7 +139,12 @@ export default function DrawPanel({
 				<button
 					onClick={onHirit}
 					disabled={!canHirit}
-					className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100"
+					className="hud-btn flex flex-1 items-center justify-center gap-1.5 rounded-(--hud-radius-sm) px-5 py-2.5 text-sm font-bold shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100"
+					style={{
+						background:
+							"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+						color: "var(--hud-accent-ink)",
+					}}
 				>
 					<LuPlus className="h-4 w-4" />
 					Hirit — draw a card

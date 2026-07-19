@@ -711,7 +711,7 @@ function BuyInScreen({ onBuyIn, balance }: { onBuyIn: () => void; balance: numbe
 
 export default function Poker() {
   const wallet = useWallet()
-  const [theme, setTheme] = useState<ThemeKey>('midnight')
+  const [theme, setTheme] = useState<ThemeKey>('neo')
   const [back, setBack] = useState<BackKey>('lattice')
   const [handState, setHandState] = useState<HandState>(() => createInitialState(0))
   const [results, setResults] = useState<ShowdownResult[]>([])

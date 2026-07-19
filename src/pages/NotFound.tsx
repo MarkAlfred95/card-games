@@ -5,8 +5,8 @@ import type { CSSVars } from "../styleVars";
 
 export default function NotFound() {
 	return (
-		// theme-classic supplies the --card-* variables the cards need.
-		<div className="theme-classic relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0b1120] px-6 text-slate-100">
+		// theme-neo supplies the --card-* variables the cards need.
+		<div className="theme-neo relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0e0b09] px-6 text-[#f2e7d3]">
 			{/* Ambient background glows */}
 			<div aria-hidden className="pointer-events-none absolute inset-0">
 				<div className="absolute -top-40 left-1/2 h-[34rem] w-[54rem] -translate-x-1/2 rounded-full bg-emerald-500/15 blur-3xl" />

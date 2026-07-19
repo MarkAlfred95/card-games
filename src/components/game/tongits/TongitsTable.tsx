@@ -147,7 +147,7 @@ function MeldArea({
 	const group = (seat: number, label: string) => {
 		const melds = state.players[seat].melds;
 		return (
-			<div className="flex min-h-24 flex-col items-center gap-2 rounded-xl bg-black/15 p-2.5 ring-1 ring-white/10 sm:p-3">
+			<div className="flex min-h-24 flex-col items-center gap-2 rounded-(--hud-radius-sm) bg-black/15 p-2.5 ring-1 ring-white/10 sm:p-3">
 				<div className="flex flex-1 flex-wrap items-start justify-center gap-2">
 					{melds.length ? (
 						melds.map((m) => (
@@ -173,8 +173,8 @@ function MeldArea({
 	};
 
 	return (
-		<div className="relative mt-5 w-full rounded-2xl border border-white/15 bg-black/10 p-3 pt-5 sm:p-4 sm:pt-6">
-			<span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/70 px-4 py-1 text-[10px] font-bold uppercase tracking-widest ring-1 ring-white/15">
+		<div className="relative mt-5 w-full rounded-(--hud-radius) border border-white/15 bg-black/10 p-3 pt-5 sm:p-4 sm:pt-6">
+			<span className="hud-label absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-(--hud-radius-sm) bg-black/70 px-4 py-1 text-[10px] font-bold uppercase tracking-widest ring-1 ring-white/15">
 				Meld Area
 			</span>
 			<div className="grid gap-3 sm:grid-cols-2">
@@ -209,7 +209,10 @@ function StatusPanel({
 		[
 			"Dealer",
 			<span key="d" className="flex items-center gap-1">
-				<FaCrown className="h-3 w-3 text-amber-400" />
+				<FaCrown
+					className="h-3 w-3"
+					style={{ color: "var(--hud-accent)" }}
+				/>
 				{names[state.dealer]}
 			</span>,
 		],
@@ -237,12 +240,22 @@ function StatusPanel({
 		[
 			"Status",
 			res ? (
-				<span key="s" className="text-amber-300">
+				<span
+					key="s"
+					style={{
+						color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+					}}
+				>
 					{names[res.winner]}{" "}
 					{res.winner === 0 ? "win" : "wins"}
 				</span>
 			) : (
-				<span key="s" className="text-emerald-300">
+				<span
+					key="s"
+					style={{
+						color: "color-mix(in srgb, var(--hud-positive) 65%, white)",
+					}}
+				>
 					In Progress
 				</span>
 			),
@@ -250,15 +263,22 @@ function StatusPanel({
 	];
 
 	return (
-		<div className="hidden w-full min-w-52 rounded-2xl bg-black/40 p-4 ring-1 ring-white/15 backdrop-blur lg:block">
+		<div className="hidden w-full min-w-52 rounded-(--hud-radius) bg-black/40 p-4 ring-1 ring-white/15 backdrop-blur lg:block">
 			<div
-				className={`border-b border-white/10 pb-2 text-sm font-bold uppercase tracking-wide ${
-					res
-						? "text-amber-300"
-						: state.turn === 0
-							? "text-emerald-300"
-							: "opacity-80"
+				className={`hud-label border-b border-white/10 pb-2 text-sm font-bold uppercase tracking-wide ${
+					res || state.turn === 0 ? "" : "opacity-80"
 				}`}
+				style={
+					res
+						? {
+								color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+							}
+						: state.turn === 0
+							? {
+									color: "color-mix(in srgb, var(--hud-positive) 65%, white)",
+								}
+							: undefined
+				}
 			>
 				{heading}
 			</div>
@@ -290,10 +310,10 @@ function SortRail({
 }) {
 	const rankActive = sortMode === "rank-asc" || sortMode === "rank-desc";
 	const btn = (active: boolean) =>
-		`w-full rounded-xl px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide ring-1 transition ${
+		`w-full rounded-(--hud-radius-sm) px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide transition ${
 			active
-				? "bg-amber-400/15 ring-amber-400/60"
-				: "bg-black/30 ring-white/15 hover:bg-black/45"
+				? "bg-[color-mix(in_srgb,var(--hud-accent)_15%,transparent)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--hud-accent)_60%,transparent)]"
+				: "bg-black/30 ring-1 ring-white/15 hover:bg-black/45"
 		}`;
 
 	return (

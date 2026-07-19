@@ -61,18 +61,25 @@ export default function Header({
 				<div className="flex items-center gap-3">
 					<Link
 						to="/"
-						className="flex items-center gap-1.5 rounded-xl bg-black/30 px-3 py-2 text-sm font-medium transition hover:bg-black/40 border border-white/20"
+						className="hud-btn flex items-center gap-1.5 rounded-(--hud-radius-sm) bg-black/30 px-3 py-2 text-sm font-medium transition hover:bg-black/40 border border-white/20"
 						title="Back to games"
 					>
 						<LuArrowLeft className="h-5 w-5" />{" "}
 						<span className="hidden sm:block">Games</span>
 					</Link>
-					<h1 className="font-display text-2xl font-semibold tracking-tight">
+					<h1 className="font-display text-2xl font-semibold tracking-tight [.theme-neo_&]:text-lg [.theme-neo_&]:uppercase">
 						{title}
 					</h1>
 					{division && (
 						<span
-							className="rounded-full bg-amber-400/20 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/40"
+							className="hud-label rounded-(--hud-radius-sm) px-2.5 py-1 text-xs font-bold uppercase tracking-wide"
+							style={{
+								backgroundColor:
+									"color-mix(in srgb, var(--hud-accent) 20%, transparent)",
+								color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+								boxShadow:
+									"0 0 0 1px color-mix(in srgb, var(--hud-accent) 40%, transparent)",
+							}}
 							title="Spending division"
 						>
 							{division}
@@ -80,11 +87,28 @@ export default function Header({
 					)}
 				</div>
 				<div className="ml-auto flex items-center gap-3">
-					<div className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm backdrop-blur">
-						<span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-						<span className="opacity-60">Balance</span>
+					<div className="hidden sm:flex items-center gap-2 rounded-(--hud-radius-sm) border border-white/10 bg-white/[0.06] px-4 py-2 text-sm backdrop-blur">
+						<span
+							className="h-2 w-2 rounded-full [.theme-neo_&]:rounded-none"
+							style={{
+								background:
+									balance < 0
+										? "var(--hud-negative)"
+										: "var(--hud-positive)",
+								boxShadow:
+									"0 0 8px color-mix(in srgb, currentColor 40%, transparent)",
+							}}
+						/>
+						<span className="hud-label opacity-60">Balance</span>
 						<b
-							className={`tabular-nums ${balance < 0 ? "text-red-300" : "text-emerald-300"}`}
+							className="tabular-nums"
+							style={{
+								color: `color-mix(in srgb, ${
+									balance < 0
+										? "var(--hud-negative)"
+										: "var(--hud-positive)"
+								} 65%, white)`,
+							}}
 						>
 							{formatUSD(balance)}
 						</b>
