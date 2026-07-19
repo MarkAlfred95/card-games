@@ -117,7 +117,12 @@ export default function RulesMenu({ themeClass }: { themeClass?: string }) {
 							<dl className="mt-3 space-y-2.5">
 								{rules.map(([term, text]) => (
 									<div key={term}>
-										<dt className="text-xs font-bold uppercase tracking-wide text-amber-300">
+										<dt
+											className="hud-label text-xs font-bold uppercase tracking-wide"
+											style={{
+												color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+											}}
+										>
 											{term}
 										</dt>
 										<dd className="text-sm opacity-80">

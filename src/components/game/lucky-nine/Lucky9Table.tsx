@@ -60,7 +60,7 @@ export default function Lucky9Table({
 			    the viewport edges so the table reads big; the page clips the
 			    horizontal overflow. */}
 			<div
-				className="absolute -inset-x-14 inset-y-0 sm:inset-x-0 rounded-[50%] border-[6px] border-black/40 shadow-[inset_0_0_70px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
+				className="game-table absolute -inset-x-14 inset-y-0 sm:inset-x-0 rounded-[50%] border-[6px] border-black/40 shadow-[inset_0_0_70px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
 				style={{
 					background:
 						"radial-gradient(ellipse at 50% 38%, var(--table-felt), var(--table-felt-2))",
@@ -69,12 +69,15 @@ export default function Lucky9Table({
 
 			{/* Center round info */}
 			<div className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center">
-				<div className="text-3xl font-bold tabular-nums opacity-90">
+				<div className="text-3xl font-bold tabular-nums opacity-90 [.theme-neo_&]:font-display [.theme-neo_&]:text-2xl">
 					{gameIndex + 1}
 					<span className="opacity-50"> / {totalGames}</span>
 				</div>
-				<div className="mt-1 flex items-center justify-center gap-1.5 text-xs opacity-70">
-					<FaCrown className="h-3 w-3 text-amber-400" />
+				<div className="hud-label mt-1 flex items-center justify-center gap-1.5 text-xs opacity-70">
+					<FaCrown
+						className="h-3 w-3"
+						style={{ color: "var(--hud-accent)" }}
+					/>
 					Banker:{" "}
 					<b>{banker === humanSeat ? "You" : names[banker]}</b>
 				</div>
@@ -84,8 +87,11 @@ export default function Lucky9Table({
 						style={{
 							animation:
 								"popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s both",
+							background:
+								"linear-gradient(to bottom, var(--hud-accent), var(--hud-accent-2))",
+							color: "var(--hud-accent-ink)",
 						}}
-						className="mt-3 flex items-center gap-1.5 rounded-xl bg-amber-400 px-4 py-2 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-amber-300"
+						className="hud-btn mt-3 flex items-center gap-1.5 rounded-(--hud-radius-sm) px-4 py-2 text-sm font-bold shadow-lg transition hover:brightness-110"
 					>
 						{isLast ? "Final standings" : "Next game"}
 						<LuArrowRight className="h-4 w-4" />
