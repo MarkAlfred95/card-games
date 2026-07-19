@@ -107,7 +107,7 @@ export default function SeatPanel({
 						? { duration: 1, repeat: Infinity }
 						: { duration: 0.25 }
 				}
-				className="w-32 rounded-2xl bg-black/40 p-3 text-center backdrop-blur sm:w-36"
+				className="w-28 rounded-(--hud-radius) bg-black/40 p-3 text-center backdrop-blur sm:w-36"
 			>
 				<div className="relative mx-auto h-12 w-12 sm:h-14 sm:w-14">
 					<div className="grid h-full w-full place-items-center rounded-full border border-white/15 bg-black/40 text-2xl sm:text-3xl">
@@ -115,17 +115,24 @@ export default function SeatPanel({
 					</div>
 					{isDealer && (
 						<span
-							className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-amber-400"
+							className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full"
+							style={{ background: "var(--hud-accent)" }}
 							title="Dealer"
 						>
-							<FaCrown className="h-3 w-3 text-slate-900" />
+							<FaCrown
+								className="h-3 w-3"
+								style={{ color: "var(--hud-accent-ink)" }}
+							/>
 						</span>
 					)}
 				</div>
 				<div className="mt-1.5 flex items-center justify-center gap-1 text-sm font-semibold leading-tight">
 					<span>{name}</span>
 					{isWinner && (
-						<FaTrophy className="h-3.5 w-3.5 text-amber-400" />
+						<FaTrophy
+							className="h-3.5 w-3.5"
+							style={{ color: "var(--hud-accent)" }}
+						/>
 					)}
 				</div>
 				<div className="text-xs tabular-nums opacity-80">
@@ -136,10 +143,15 @@ export default function SeatPanel({
 				</div>
 
 				<div className="mt-2 border-t border-white/10 pt-1.5">
-					<div className="text-[9px] font-bold uppercase tracking-widest opacity-60">
+					<div className="hud-label text-[9px] font-bold uppercase tracking-widest opacity-60">
 						Deadwood
 					</div>
-					<div className="text-xl font-black tabular-nums text-amber-300">
+					<div
+						className="text-xl font-black tabular-nums"
+						style={{
+							color: "color-mix(in srgb, var(--hud-accent) 75%, white)",
+						}}
+					>
 						{deadwood ?? "—"}
 					</div>
 				</div>
@@ -147,13 +159,18 @@ export default function SeatPanel({
 				{reveal && (
 					<div className="mt-1 flex flex-wrap items-center justify-center gap-1">
 						<span
-							className={`text-xs font-bold tabular-nums ${
-								money > 0
-									? "text-emerald-300"
-									: money < 0
-										? "text-red-300"
-										: "opacity-60"
-							}`}
+							className={`text-xs font-bold tabular-nums ${money === 0 ? "opacity-60" : ""}`}
+							style={
+								money !== 0
+									? {
+											color: `color-mix(in srgb, ${
+												money > 0
+													? "var(--hud-positive)"
+													: "var(--hud-negative)"
+											} 65%, white)`,
+										}
+									: undefined
+							}
 						>
 							{formatDelta(money)}
 						</span>
