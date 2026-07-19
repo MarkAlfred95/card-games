@@ -262,7 +262,7 @@ export default function Seat({
 				</div>
 			)}
 			<div
-				className={`min-w-24 rounded-xl px-3 py-1.5 text-center backdrop-blur ${
+				className={`min-w-24 rounded-(--hud-radius-sm) px-3 py-1.5 text-center backdrop-blur ${
 					isYou ? "" : "bg-black/40 shadow-lg ring-1 ring-white/15"
 				}`}
 				style={
@@ -279,19 +279,33 @@ export default function Seat({
 				<div className="flex items-center justify-center gap-1 text-sm font-semibold leading-tight">
 					{isBanker && (
 						<FaCrown
-							className="h-3.5 w-3.5 text-amber-400"
+							className="h-3.5 w-3.5"
+							style={{ color: "var(--hud-accent)" }}
 							title="Banker"
 						/>
 					)}
 					<span>{isYou ? "You" : name}</span>
 					{reveal && natural ? (
-						<span className="rounded bg-amber-400/90 px-1 text-[9px] font-bold uppercase tracking-wide text-slate-900">
+						<span
+							className="rounded px-1 text-[9px] font-bold uppercase tracking-wide"
+							style={{
+								background:
+									"color-mix(in srgb, var(--hud-accent) 90%, transparent)",
+								color: "var(--hud-accent-ink)",
+							}}
+						>
 							{natural}
 						</span>
 					) : (
 						reveal &&
 						foul && (
-							<span className="rounded bg-red-500/80 px-1 text-[9px] font-bold uppercase tracking-wide">
+							<span
+								className="rounded px-1 text-[9px] font-bold uppercase tracking-wide"
+								style={{
+									background:
+										"color-mix(in srgb, var(--hud-negative) 80%, transparent)",
+								}}
+							>
 								Foul
 							</span>
 						)
@@ -302,18 +316,23 @@ export default function Seat({
 				</div>
 				{reveal ? (
 					<div
-						className={`text-[11px] font-bold tabular-nums ${
-							money > 0
-								? "text-emerald-300"
-								: money < 0
-									? "text-red-300"
-									: "opacity-60"
-						}`}
+						className={`text-[11px] font-bold tabular-nums ${money === 0 ? "opacity-60" : ""}`}
+						style={
+							money !== 0
+								? {
+										color: `color-mix(in srgb, ${
+											money > 0
+												? "var(--hud-positive)"
+												: "var(--hud-negative)"
+										} 65%, white)`,
+									}
+								: undefined
+						}
 					>
 						{formatDelta(money)}
 					</div>
 				) : (
-					<div className="text-[10px] opacity-60">
+					<div className="hud-label text-[10px] opacity-60">
 						{isBanker ? "banking" : `stake ${formatUSD(stake)}`}
 					</div>
 				)}
