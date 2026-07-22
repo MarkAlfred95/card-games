@@ -87,6 +87,23 @@ export const GAMES: Game[] = [
     ],
   },
   {
+    id: 'blackjack',
+    name: 'Blackjack',
+    tagline: 'Beat the dealer to 21',
+    description:
+      'Hit, stand, double, or split against the dealer. Get closer to 21 without busting — a two-card blackjack pays 3:2.',
+    players: '1 player',
+    path: '/games/blackjack',
+    status: 'available',
+    accent: '#E23D57',
+    preview: [
+      { rank: 'A', suit: 'S' },
+      { rank: 'K', suit: 'S' },
+      { rank: '10', suit: 'H' },
+    ],
+    component: lazy(() => import('./pages/Blackjack')),
+  },
+  {
     id: 'tongits',
     name: 'Tongits',
     tagline: 'Rummy-style melds',
