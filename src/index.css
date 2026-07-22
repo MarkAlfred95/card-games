@@ -24,6 +24,14 @@
 	--radius-card: 0.55rem;
 	overscroll-behavior-y: none;
 
+	/* Every theme is a dark palette, so tell the browser to render native UI
+	   (scrollbars, form controls, the overscroll gutter, mobile chrome) dark to
+	   match — otherwise they default to light and clash with the felt. The base
+	   background matches the darkest felt so any overscroll/pre-mount area reads
+	   as the table, not a white flash. */
+	color-scheme: dark;
+	background-color: #0e0b09;
+
 	/* HUD chrome variables consumed by the game pages (buttons, badges,
 	   status tints, panel radii). Defaults preserve the classic amber/emerald
 	   casino look; themes may override (theme-neo restyles all of them). */
