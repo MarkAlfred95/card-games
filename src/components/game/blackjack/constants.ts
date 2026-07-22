@@ -13,3 +13,10 @@ export function maxBetFor(balance: number, factor: number): number {
   const minChip = MIN_CHIP * factor;
   return Math.max(minChip, Math.floor(balance / 2 / minChip) * minChip);
 }
+
+// How a hand total reads on the felt. A soft hand (an ace still worth 11) shows
+// both interpretations, e.g. A+2 → "3 / 13"; a 21 or a hard hand shows the one
+// value. Takes the `{ total, soft }` from the engine's handTotal.
+export function formatTotal(total: number, soft: boolean): string {
+  return soft && total < 21 ? `${total - 10} / ${total}` : String(total);
+}
