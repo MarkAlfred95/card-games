@@ -5,6 +5,7 @@ import Card from "../../Card";
 import { formatUSD } from "../../../wallet";
 import type { Card as CardModel } from "../../../game/types";
 import type { CSSVars } from "../../../styleVars";
+import { formatTotal } from "./constants";
 import RulesMenu from "./RulesMenu";
 
 interface ActionPanelProps {
@@ -45,6 +46,7 @@ export default function ActionPanel({
 	themeClass,
 }: ActionPanelProps) {
 	const bust = total > 21;
+	const totalLabel = formatTotal(total, soft);
 	const status = bust
 		? {
 				text: `Bust at ${total} — hand over.`,
@@ -66,7 +68,7 @@ export default function ActionPanel({
 					},
 				}
 			: {
-					text: `${soft ? "Soft " : ""}${total} — hit, stand${
+					text: `${totalLabel} — hit, stand${
 						canDouble ? ", double" : ""
 					}${canSplit ? ", or split" : ""}?`,
 					tone: "bg-white/15",
@@ -91,10 +93,10 @@ export default function ActionPanel({
 					</span>
 					<div className="flex items-center gap-1.5">
 						<span
-							className="grid h-8 min-w-8 place-items-center rounded-full bg-white px-1.5 text-sm font-extrabold tabular-nums text-slate-800 shadow-md ring-1 ring-black/10"
+							className="grid h-8 min-w-8 place-items-center whitespace-nowrap rounded-full bg-white px-2 text-sm font-extrabold tabular-nums text-slate-800 shadow-md ring-1 ring-black/10"
 							title="Hand total"
 						>
-							{total}
+							{totalLabel}
 						</span>
 						<RulesMenu themeClass={themeClass} />
 					</div>
