@@ -7,6 +7,7 @@ import type { BackKey } from "../../../cardbacks";
 import type { CSSVars } from "../../../styleVars";
 import { handTotal, type HandResult, type HandOutcome } from "../../../game/blackjack";
 import { formatUSD, formatDelta } from "../../../wallet";
+import { formatTotal } from "./constants";
 import CardSmall from "../../CardSmall";
 
 // A single card that flips over to reveal itself (same approach as the Lucky 9
@@ -175,7 +176,7 @@ export default function BlackjackTable({
 	isLast = false,
 	onNext,
 }: BlackjackTableProps) {
-	const dealerTotal = handTotal(dealer).total;
+	const dealerEval = handTotal(dealer);
 	const split = playerHands.length > 1;
 
 	return (
@@ -207,7 +208,9 @@ export default function BlackjackTable({
 						<span>Dealer</span>
 					</div>
 					<div className="hud-label text-[10px] opacity-60">
-						{reveal ? `total ${dealerTotal}` : "stands on 17"}
+						{reveal
+						? `total ${formatTotal(dealerEval.total, dealerEval.soft)}`
+						: "stands on 17"}
 					</div>
 				</div>
 			</div>
@@ -249,7 +252,7 @@ export default function BlackjackTable({
 				}`}
 			>
 				{playerHands.map((h, i) => {
-					const total = handTotal(h.cards).total;
+					const { total, soft } = handTotal(h.cards);
 					const showFaces = playerFaceUp || reveal;
 					const isActive = playing && i === activeHand;
 					const delta = h.result?.delta ?? 0;
@@ -270,13 +273,13 @@ export default function BlackjackTable({
 								/>
 								{showFaces && (
 									<span
-										className={`absolute top-1/2 left-full ml-1 grid h-6 min-w-6 -translate-y-1/2 place-items-center rounded-full bg-white px-1 text-[11px] font-extrabold tabular-nums shadow-md ring-1 ${
+										className={`absolute top-1/2 left-full ml-1 grid h-6 min-w-6 -translate-y-1/2 place-items-center whitespace-nowrap rounded-full bg-white px-1.5 text-[11px] font-extrabold tabular-nums shadow-md ring-1 ${
 											total > 21
 												? "text-red-600 ring-red-400"
 												: "text-slate-700 ring-black/10"
 										}`}
 									>
-										{total}
+										{formatTotal(total, soft)}
 									</span>
 								)}
 							</div>
